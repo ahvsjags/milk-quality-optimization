@@ -28,6 +28,10 @@ GitHub Pages 静态演示：`https://ahvsjags.github.io/milk-quality-optimizatio
 
 公共网页包含“己醛 ×1000”抗压测试和“非牛奶 / Non-milk”样品选项，可验证该流程。
 
+### 公共启发式优化工作台
+
+公共网页的“模型优化”区会按选择的预测目标、候选模型、启发式算法和搜索预算，在浏览器中实际运行固定 70/30 验证集搜索。支持 SVR-RBF、Extra Trees、Random Forest、Gradient Boosting，以及 PSO、SA、AFSA、GA、DE、GWO、WOA、ACO 共 8 种启发式算法。结果显示最佳参数、R²、RMSE、MAE、相对基线提升与收敛轨迹；首次使用会下载浏览器科学计算环境，因此耗时会高于预测页。
+
 ### GitHub Pages 的浏览器推理
 
 `docs/` 是可直接发布到 GitHub Pages 的独立网站。`export_browser_model.py` 将不可变 joblib 模型**仅导出推理参数**（缩放、30 个特征索引、SVR-RBF 支持向量、量程与适用域守卫）至 `docs/assets/frozen-model-v1.json`，不重新训练模型。
@@ -74,5 +78,9 @@ The public demo runs the immutable prediction model in the visitor's browser. No
 - Integrity: SHA-256 verification is performed by Flask, and the same artifact digest is shown by the browser demo.
 
 The public page performs range and LedoitWolf Mahalanobis applicability-domain checks. Out-of-domain inputs remain available for a guarded, bounded prediction and show a clear warning instead of crashing.
+
+### Public metaheuristic workbench
+
+The public **Optimize** section runs a real, bounded fixed-70/30-holdout search in the browser for the selected target, candidate model, algorithm, and budget. It supports SVR-RBF, Extra Trees, Random Forest, Gradient Boosting, and eight metaheuristics: PSO, SA, AFSA, GA, DE, GWO, WOA, and ACO. It returns best parameters, R², RMSE, MAE, baseline improvement, and convergence history. The first run downloads the scientific browser runtime, so it takes longer than inference.
 
 `docs/` is the standalone GitHub Pages site. It uses inference-only parameters exported from the immutable joblib bundle by `export_browser_model.py`; it never retrains the model.

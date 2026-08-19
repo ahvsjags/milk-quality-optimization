@@ -95,6 +95,23 @@
     .method { padding:17px; border:1px solid var(--line); border-radius:14px; background:#fff; }
     .method b { display:block; margin-bottom:5px; font-size:.9rem; }
     .method p { margin:0; color:#667c73; font-size:.77rem; line-height:1.5; }
+    .optimizer-grid { display:grid; grid-template-columns:.86fr 1.14fr; gap:24px; align-items:start; }
+    .optimizer-body { padding:20px; }
+    .optimizer-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+    .algorithm-pills { display:flex; flex-wrap:wrap; gap:7px; margin:16px 0; }
+    .algorithm-pills span { padding:5px 8px; border-radius:7px; color:#246349; background:#e8f6ef; font-size:.72rem; font-weight:800; }
+    .run-status { min-height:45px; margin-top:14px; padding:11px 12px; border-radius:10px; color:#45675a; background:#f2f8f4; font-size:.8rem; line-height:1.45; }
+    .run-status.loading { color:#17593f; background:#e5f5ec; }
+    .experiment-note { margin-top:14px; color:#71857c; font-size:.76rem; line-height:1.5; }
+    .experiment-result { padding:20px; }
+    .experiment-empty { min-height:246px; display:grid; place-items:center; color:#7c9288; text-align:center; }
+    .experiment-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .experiment-metric { padding:12px; border:1px solid #e0ebe5; border-radius:11px; background:#fbfefc; }
+    .experiment-metric span { display:block; color:#71857c; font-size:.72rem; font-weight:700; }
+    .experiment-metric b { display:block; margin-top:5px; color:#176e4d; font-size:1.25rem; letter-spacing:-.035em; }
+    .parameter-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:14px; }
+    .parameter-list div { display:flex; justify-content:space-between; gap:9px; padding:8px 9px; border-radius:8px; color:#3b6253; background:#f3f8f5; font: .75rem ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .optimization-chart { min-height:220px; margin-top:16px; padding:10px; border:1px solid #e1ece6; border-radius:12px; }
     footer { margin-top:15px; padding:28px 0; color:#cfe6dc; background:#103b31; }
     .foot { display:flex; justify-content:space-between; gap:18px; align-items:center; font-size:.81rem; }
     .foot a { color:#9fe6d1; }
@@ -104,8 +121,8 @@
     .dialog-body { padding:20px; line-height:1.55; }
     .dialog-actions { display:flex; justify-content:flex-end; padding:0 20px 19px; }
     .hidden { display:none!important; }
-    @media (max-width:860px) { .nav-links { display:none; } .hero { padding:54px 0 42px; } .hero-grid,.predict-grid,.visual-grid { grid-template-columns:1fr; } .hero-stat { max-width:520px; } .method-grid { grid-template-columns:repeat(2,1fr); } }
-    @media (max-width:530px) { .container { width:min(100% - 24px,1160px); } .feature-grid,.result-grid { grid-template-columns:1fr; } .result.preference { grid-column:span 1; } .sample-row { grid-template-columns:1fr; } .card-head { padding:15px; } .form-body,.results { padding:14px; } .visual { padding:20px; } }
+    @media (max-width:860px) { .nav-links { display:none; } .hero { padding:54px 0 42px; } .hero-grid,.predict-grid,.visual-grid,.optimizer-grid { grid-template-columns:1fr; } .hero-stat { max-width:520px; } .method-grid { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:530px) { .container { width:min(100% - 24px,1160px); } .feature-grid,.result-grid,.optimizer-fields,.experiment-metrics { grid-template-columns:1fr; } .result.preference { grid-column:span 1; } .sample-row { grid-template-columns:1fr; } .card-head { padding:15px; } .form-body,.results,.optimizer-body,.experiment-result { padding:14px; } .visual { padding:20px; } }
   </style>
 </head>
 <body>
@@ -115,6 +132,7 @@
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#predict" data-i18n="navPredict">在线预测</a>
         <a href="#visualization" data-i18n="navVisual">结果可视化</a>
+        <a href="#optimization" data-i18n="navOptimize">模型优化</a>
         <a href="#method" data-i18n="navModel">模型说明</a>
       </nav>
       <button class="lang-switch" id="languageToggle" type="button" aria-label="Switch language">EN</button>
@@ -183,6 +201,34 @@
       </div>
     </section>
 
+    <section class="section" id="optimization">
+      <div class="container">
+        <h2 class="section-title" data-i18n="optTitle">启发式模型优化工作台</h2>
+        <p class="section-kicker" data-i18n="optSubtitle">选择目标、模型与启发式算法，在浏览器中以固定 70/30 验证集执行一次真实、有界的超参数搜索。</p>
+        <div class="optimizer-grid">
+          <section class="card">
+            <div class="card-head"><h3 data-i18n="optSetup">实验设置</h3><span class="tag" data-i18n="optBrowser">浏览器运行</span></div>
+            <div class="optimizer-body">
+              <div class="optimizer-fields">
+                <div><label for="optTarget" data-i18n="optTarget">预测目标</label><select id="optTarget"><option value="Milky">Milky / 奶香味</option><option value="Fatty">Fatty / 脂香味</option><option value="Cooked">Cooked / 蒸煮味</option><option value="Oxidized">Oxidized / 氧化味</option><option value="Sweet">Sweet / 甜味</option><option value="Fresh">Fresh / 青草味</option><option value="Preference">Preference / 喜好度</option></select></div>
+                <div><label for="optModel" data-i18n="optModel">候选模型</label><select id="optModel"><option value="SVR_RBF">SVR · RBF</option><option value="ExtraTrees">Extra Trees</option><option value="RandomForest">Random Forest</option><option value="GradientBoosting">Gradient Boosting</option></select></div>
+                <div><label for="optAlgorithm" data-i18n="optAlgorithm">启发式算法</label><select id="optAlgorithm"><option value="PSO">PSO · Particle Swarm</option><option value="SA">SA · Simulated Annealing</option><option value="AFSA">AFSA · Artificial Fish Swarm</option><option value="GA">GA · Genetic Algorithm</option><option value="DE">DE · Differential Evolution</option><option value="GWO">GWO · Grey Wolf Optimizer</option><option value="WOA">WOA · Whale Optimization</option><option value="ACO">ACO · Continuous Ant Colony</option></select></div>
+                <div><label for="optBudget" data-i18n="optBudget">搜索预算</label><select id="optBudget"><option value="quick" data-i18n="budgetQuick">快速 · 3×6</option><option value="standard" data-i18n="budgetStandard">标准 · 6×8</option><option value="thorough" data-i18n="budgetThorough">完整 · 10×12</option></select></div>
+              </div>
+              <div class="algorithm-pills" aria-label="Supported metaheuristic algorithms"><span>PSO</span><span>SA</span><span>AFSA</span><span>GA</span><span>DE</span><span>GWO</span><span>WOA</span><span>ACO</span></div>
+              <button class="btn btn-run" id="runOptimization" type="button" data-i18n="optRun">✦ 开始真实优化</button>
+              <div class="run-status" id="optimizerStatus" data-i18n="optReady">准备就绪。首次运行会下载浏览器计算环境与实验数据，可能需要少量时间。</div>
+              <p class="experiment-note" data-i18n="optNote">实验仅用于比较候选超参数；不会覆盖、重训或修改已冻结的生产预测模型。</p>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head"><h3 data-i18n="optResults">优化结果</h3><span class="tag" data-i18n="optHoldout">固定验证集</span></div>
+            <div class="experiment-result"><div class="experiment-empty" id="optimizationEmpty"><div><div class="empty-icon">⌁</div><strong data-i18n="optEmptyTitle">选择后开始实验</strong><p data-i18n="optEmptyText">将返回最佳参数、R²、RMSE、MAE、相对基线提升及收敛轨迹。</p></div></div><div id="optimizationResult" class="hidden"><div class="experiment-metrics"><div class="experiment-metric"><span>Validation R²</span><b id="optR2">—</b></div><div class="experiment-metric"><span>RMSE</span><b id="optRmse">—</b></div><div class="experiment-metric"><span>MAE</span><b id="optMae">—</b></div></div><div class="parameter-list" id="parameterList"></div><div class="optimization-chart"><canvas id="optimizationChart" aria-label="Optimization convergence chart"></canvas></div><p class="experiment-note" id="optimizationSummary"></p></div></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="method">
       <div class="container">
         <h2 class="section-title" data-i18n="methodTitle">模型与优化策略</h2>
@@ -201,8 +247,14 @@
       zh: { navPredict:'在线预测',navVisual:'结果可视化',navModel:'模型说明',frozenBadge:'FROZEN PRODUCTION MODEL',heroTitle:'牛奶感官预测，<br>有据可循。',heroText:'基于已冻结的 SVR-RBF + SelectKBest_30 模型，对 86 种挥发性化合物浓度进行推理，输出六项感官属性与整体喜好度。',heroAction:'开始预测 →',heroMore:'查看模型说明',statVersion:'部署版本',statOutput:'输出量程',statScale:'六项感官属性 0–5 · 喜好度 0–10',statDomain:'输入防护',statDomainValue:'训练范围 + Mahalanobis 适用域',predictTitle:'在线预测工作台',predictSubtitle:'所有预测均由浏览器直接加载固定模型完成；模型参数不会在此页面中被重新训练或更改。',inputTitle:'化合物浓度输入',sampleLabel:'样品类型',milkOption:'牛奶 / Milk',nonMilkOption:'非牛奶 / Non-milk',unknownOption:'未知 / Unknown',searchLabel:'查找化合物',searchPlaceholder:'例如 Hexanal（己醛）',stressTest:'⚡ 抗压测试：己醛 ×1000',reset:'恢复训练中位数',featureNote:'单位：μg/kg。请输入全部 86 项浓度；页面会自动用训练中位数初始化。',runPredict:'✦ 运行预测',predictHint:'超范围数据不会令平台崩溃；会给出边界保护后的分数与明确提示。',resultsTitle:'预测结果',resultsTag:'实时',emptyTitle:'等待预测',emptyText:'提交数据后，将在此展示感官评分。',modelTitle:'冻结模型与适用域',modelType:'模型',selection:'特征选择',domain:'适用域',domainValue:'训练范围 + LedoitWolf Mahalanobis',integrity:'模型校验',oodTitle:'适用域警告',oodWarning:'该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考',visualTitle:'结果可视化',visualText:'预测完成后，雷达图会将六项感官属性与喜好度的相对表现集中展示。',legendSensory:'感官属性 · 0–5',legendPreference:'喜好度 · 0–10',legendProtected:'量程保护已启用',methodTitle:'模型与优化策略',methodSubtitle:'部署参数已经固定；不同感官目标使用训练期间验证得到的对应优化策略。',psoText:'奶香味、氧化味与青草味',saText:'蒸煮味',afsaText:'脂香味与甜味',svrText:'固定 RBF 参数、SelectKBest_30 与量程约束',footerText:'牛奶质量智能预测',sourceLink:'查看源代码',dialogTitle:'Out of Domain · 适用域提醒',dialogDetail:'系统继续运行：超出训练范围的浓度仅在推理时截断到边界，输出分数也会限制在合法量表内。',understood:'我已了解',invalid:'请填写有效且不小于 0 的化合物浓度。',sampleNonMilk:'样品类型为非牛奶或未知',rangeReason:'{feature}：{value}（训练范围 {min}–{max}）',distanceReason:'多变量距离超出训练数据的适用域阈值',chartTitle:'预测画像（百分比化量表）' },
       en: { navPredict:'Predict',navVisual:'Visualize',navModel:'Model',frozenBadge:'FROZEN PRODUCTION MODEL',heroTitle:'Milk sensory prediction,<br>grounded in evidence.',heroText:'Use an immutable SVR-RBF + SelectKBest_30 model to infer six sensory attributes and overall preference from 86 volatile-compound concentrations.',heroAction:'Start prediction →',heroMore:'Explore the model',statVersion:'Deployment version',statOutput:'Output scales',statScale:'Six sensory attributes 0–5 · Preference 0–10',statDomain:'Input protection',statDomainValue:'Training range + Mahalanobis domain',predictTitle:'Online prediction workspace',predictSubtitle:'The fixed model is loaded and evaluated directly in the browser. No model parameter is retrained or changed on this page.',inputTitle:'Compound concentration inputs',sampleLabel:'Sample type',milkOption:'Milk',nonMilkOption:'Non-milk',unknownOption:'Unknown',searchLabel:'Find a compound',searchPlaceholder:'e.g. Hexanal',stressTest:'⚡ Stress test: Hexanal ×1000',reset:'Restore training medians',featureNote:'Unit: μg/kg. Enter all 86 concentrations; training medians initialize the inputs.',runPredict:'✦ Run prediction',predictHint:'Out-of-range data does not crash the platform; guarded scores and a clear warning are returned.',resultsTitle:'Prediction results',resultsTag:'Live',emptyTitle:'Ready when you are',emptyText:'Submit the inputs to see sensory scores here.',modelTitle:'Frozen model & domain',modelType:'Model',selection:'Feature selection',domain:'Applicability domain',domainValue:'Training range + LedoitWolf Mahalanobis',integrity:'Model integrity',oodTitle:'Applicability-domain alert',oodWarning:'This data is outside the model applicability domain (Out of Domain); results are for reference only.',visualTitle:'Result visualization',visualText:'After prediction, the radar chart summarizes six sensory dimensions and preference on their respective scales.',legendSensory:'Sensory attributes · 0–5',legendPreference:'Preference · 0–10',legendProtected:'Scale protection on',methodTitle:'Model & optimization strategy',methodSubtitle:'Deployment parameters are frozen; each sensory target retains its validated optimization strategy.',psoText:'Milky, oxidized and fresh notes',saText:'Cooked note',afsaText:'Fatty and sweet notes',svrText:'Fixed RBF parameters, SelectKBest_30 and scale constraints',footerText:'Milk quality intelligence',sourceLink:'View source',dialogTitle:'Out of Domain · Applicability alert',dialogDetail:'The system remains available: values outside the training range are clipped only for inference, and outputs stay within valid declared scales.',understood:'Understood',invalid:'Enter valid compound concentrations greater than or equal to 0.',sampleNonMilk:'Sample type is non-milk or unknown',rangeReason:'{feature}: {value} (training range {min}–{max})',distanceReason:'Multivariate distance exceeds the training-domain threshold',chartTitle:'Prediction profile (normalized scale)' }
     };
+    Object.assign(I18N.zh, {
+      navOptimize:'模型优化', optTitle:'启发式模型优化工作台', optSubtitle:'选择目标、模型与启发式算法，在浏览器中以固定 70/30 验证集执行一次真实、有界的超参数搜索。', optSetup:'实验设置', optBrowser:'浏览器运行', optTarget:'预测目标', optModel:'候选模型', optAlgorithm:'启发式算法', optBudget:'搜索预算', budgetQuick:'快速 · 3×6', budgetStandard:'标准 · 6×8', budgetThorough:'完整 · 10×12', optRun:'✦ 开始真实优化', optReady:'准备就绪。首次运行会下载浏览器计算环境与实验数据，可能需要少量时间。', optNote:'实验仅用于比较候选超参数；不会覆盖、重训或修改已冻结的生产预测模型。', optResults:'优化结果', optHoldout:'固定验证集', optEmptyTitle:'选择后开始实验', optEmptyText:'将返回最佳参数、R²、RMSE、MAE、相对基线提升及收敛轨迹。', optLoading:'正在加载浏览器计算环境与科学计算包…', optRunning:'正在执行 {model} + {algorithm} 的真实验证集搜索…', optDone:'优化完成：评估 {evaluations} 组参数，耗时 {seconds} 秒。', optFailed:'优化未完成：'
+    });
+    Object.assign(I18N.en, {
+      navOptimize:'Optimize', optTitle:'Metaheuristic optimization workbench', optSubtitle:'Choose a target, candidate model, and metaheuristic to run a real bounded hyperparameter search on a fixed 70/30 validation split in the browser.', optSetup:'Experiment setup', optBrowser:'Runs in browser', optTarget:'Prediction target', optModel:'Candidate model', optAlgorithm:'Metaheuristic', optBudget:'Search budget', budgetQuick:'Quick · 3×6', budgetStandard:'Standard · 6×8', budgetThorough:'Thorough · 10×12', optRun:'✦ Run real optimization', optReady:'Ready. The first run downloads the browser compute environment and experiment data; this can take a moment.', optNote:'The experiment compares candidate hyperparameters only. It never overwrites, retrains, or changes the frozen production predictor.', optResults:'Optimization result', optHoldout:'Fixed holdout', optEmptyTitle:'Start an experiment', optEmptyText:'The workbench returns best parameters, R², RMSE, MAE, baseline improvement, and convergence history.', optLoading:'Loading the browser compute environment and scientific packages…', optRunning:'Running a real validation search for {model} + {algorithm}…', optDone:'Optimization complete: {evaluations} parameter sets evaluated in {seconds} s.', optFailed:'Optimization did not complete: '
+    });
     let lang = localStorage.getItem('milksense-lang') || 'zh';
-    let model, chart;
+    let model, chart, optimizerChart, pyodideRuntime, optimizerInitialized = false;
     const $ = (id) => document.getElementById(id);
     const t = (key) => I18N[lang][key] || key;
     const zhNames = { Hexanal:'己醛' };
@@ -262,12 +314,41 @@
     }
     function renderNotice(domain) { const notice=$('oodNotice'); const message=lang==='zh'?'该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考':t('oodWarning'); if(!domain.ood){ notice.classList.remove('show'); return; } $('oodTitle').textContent=t('oodTitle'); $('oodMessage').textContent=message; const reasons=$('oodReasons'); reasons.replaceChildren(); domain.reasons.forEach(reason=>{const item=document.createElement('li'); item.textContent=reason; reasons.append(item);}); notice.classList.add('show'); $('dialogMessage').textContent=message; const dialog=$('oodDialog'); if(typeof dialog.showModal==='function'&&!dialog.open) dialog.showModal(); }
     function runPrediction() { try { const raw=featureVector(), domain=domainCheck(raw), predictions={}; Object.entries(model.models).forEach(([target,config])=>predictions[target]=predictModel(domain.clipped,config)); renderResults(predictions); renderChart(predictions); renderNotice(domain); $('visualization').scrollIntoView({behavior:'smooth',block:'center'}); } catch(error) { window.alert(error.message); } }
+    function setOptimizerStatus(message, loading=false) { const status=$('optimizerStatus'); status.textContent=message; status.classList.toggle('loading',loading); }
+    function loadExternalScript(source) { return new Promise((resolve,reject)=>{ const existing=[...document.scripts].find(script=>script.src===source); if(existing){ if(window.loadPyodide) resolve(); else { existing.addEventListener('load',resolve,{once:true}); existing.addEventListener('error',reject,{once:true}); } return; } const script=document.createElement('script'); script.src=source; script.async=true; script.onload=resolve; script.onerror=()=>reject(new Error('Unable to load browser compute runtime.')); document.head.append(script); }); }
+    async function initializeOptimizer() {
+      if(optimizerInitialized) return;
+      setOptimizerStatus(t('optLoading'),true);
+      await loadExternalScript('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js');
+      pyodideRuntime=await window.loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.29.3/full/'});
+      await pyodideRuntime.loadPackage(['numpy','pandas','scikit-learn']);
+      const [csvResponse,sourceResponse]=await Promise.all([fetch('./assets/optimization-training-data.csv'),fetch('./assets/browser_optimizer.py')]);
+      if(!csvResponse.ok||!sourceResponse.ok) throw new Error('Optimization data or optimizer source could not be loaded.');
+      pyodideRuntime.FS.writeFile('/home/pyodide/optimization-training-data.csv',new TextEncoder().encode(await csvResponse.text()));
+      await pyodideRuntime.runPythonAsync(await sourceResponse.text());
+      optimizerInitialized=true;
+      setOptimizerStatus(t('optReady'));
+    }
+    function renderOptimization(result) {
+      $('optR2').textContent=result.best_metrics.r2.toFixed(4); $('optRmse').textContent=result.best_metrics.rmse.toFixed(4); $('optMae').textContent=result.best_metrics.mae.toFixed(4);
+      const parameterList=$('parameterList'); parameterList.replaceChildren(); Object.entries(result.best_params).forEach(([name,value])=>{const row=document.createElement('div'); row.innerHTML=`<span>${name}</span><b>${typeof value==='number'?value.toPrecision(5):value}</b>`; parameterList.append(row);});
+      const summary=`${result.model.name} · ${result.algorithm.key} · ${result.target.label} | ΔR² ${(result.r2_improvement>=0?'+':'')+result.r2_improvement.toFixed(4)} | ${result.evaluations} evaluations | ${result.elapsed_seconds}s`;
+      $('optimizationSummary').textContent=summary; $('optimizationEmpty').classList.add('hidden'); $('optimizationResult').classList.remove('hidden');
+      if(window.Chart){ if(optimizerChart) optimizerChart.destroy(); optimizerChart=new Chart($('optimizationChart'),{type:'line',data:{labels:result.history.map((_,index)=>index+1),datasets:[{data:result.history,label:'Best validation R²',borderColor:'#2074db',backgroundColor:'rgba(32,116,219,.13)',fill:true,tension:.28,pointRadius:3,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{suggestedMin:Math.min(...result.history)-.05,suggestedMax:Math.max(...result.history)+.05}},plugins:{legend:{display:false}}}}); }
+    }
+    async function runOptimization() {
+      const button=$('runOptimization'); button.disabled=true;
+      try { await initializeOptimizer(); const request={model:$('optModel').value,algorithm:$('optAlgorithm').value,target:$('optTarget').value,budget:$('optBudget').value,seed:42}; setOptimizerStatus(t('optRunning').replace('{model}',request.model).replace('{algorithm}',request.algorithm),true); pyodideRuntime.globals.set('request_json',JSON.stringify(request)); const raw=await pyodideRuntime.runPythonAsync('run_optimization(request_json)'); const result=JSON.parse(raw); if(result.error) throw new Error(result.error); renderOptimization(result); setOptimizerStatus(t('optDone').replace('{evaluations}',result.evaluations).replace('{seconds}',result.elapsed_seconds),false); }
+      catch(error) { setOptimizerStatus(t('optFailed')+error.message,false); }
+      finally { button.disabled=false; }
+    }
     async function init() { try { const response=await fetch('./assets/frozen-model-v1.json',{cache:'no-cache'}); if(!response.ok) throw new Error('Could not load frozen model.'); model=await response.json(); applyLanguage(); $('inputCount').textContent=`${model.feature_names.length} ${lang==='zh'?'项':'inputs'}`; } catch(error) { $('modelVersion').textContent=error.message; $('predictButton').disabled=true; } }
     $('languageToggle').addEventListener('click',()=>{lang=lang==='zh'?'en':'zh';localStorage.setItem('milksense-lang',lang);applyLanguage();});
     $('search').addEventListener('input',filterInputs);
     $('reset').addEventListener('click',()=>{buildInputs(); $('sampleType').value='milk'; $('oodNotice').classList.remove('show');});
     $('stressTest').addEventListener('click',()=>{const input=[...document.querySelectorAll('.feature-input')].find(x=>x.dataset.feature==='Hexanal'); const index=Number(input.dataset.index); input.value=model.domain_guard.maximum[index]*1000; $('search').value='Hexanal'; filterInputs(); runPrediction();});
     $('predictButton').addEventListener('click',runPrediction);
+    $('runOptimization').addEventListener('click',runOptimization);
     $('closeDialog').addEventListener('click',()=>$('oodDialog').close());
     init();
   })();
