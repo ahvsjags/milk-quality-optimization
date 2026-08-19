@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Milk Quality Optimization{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <h1 class="display-4 mb-3">
+                    <i class="fas fa-flask text-primary me-3"></i>
+                    Intelligent Algorithm Optimization
+                </h1>
+                <p class="lead mb-4">
+                    Advanced optimization of milk quality prediction models using PSO, SA, and AFSA algorithms
+                </p>
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>100% Success Rate:</strong> All {{ summary_stats.total_targets }} target variables achieved R² ≥ 0.7
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-5">
+    <div class="col-md-3 mb-3">
+        <div class="metric-card">
+            <i class="fas fa-bullseye fa-2x text-primary mb-3"></i>
+            <div class="metric-value">{{ summary_stats.total_targets }}</div>
+            <div class="metric-label">Target Variables</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="metric-card">
+            <i class="fas fa-chart-line fa-2x text-success mb-3"></i>
+            <div class="metric-value">{{ "%.4f"|format(summary_stats.avg_r2) }}</div>
+            <div class="metric-label">Average R² Score</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="metric-card">
+            <i class="fas fa-trophy fa-2x text-warning mb-3"></i>
+            <div class="metric-value">{{ "%.4f"|format(summary_stats.best_r2) }}</div>
+            <div class="metric-label">Best R² Score<br><small>({{ summary_stats.best_target }})</small></div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="metric-card">
+            <i class="fas fa-percentage fa-2x text-info mb-3"></i>
+            <div class="metric-value">{{ summary_stats.success_rate }}%</div>
+            <div class="metric-label">Success Rate<br><small>(R² ≥ 0.7)</small></div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Overview Charts -->
+<div class="row mb-5">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    R² Scores by Target Variable
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="r2ScoresChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    Algorithm Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="algorithmChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Performing Models -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2"></i>
+                    Top Performing Models
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Target Variable</th>
+                                <th>Algorithm</th>
+                                <th>R² Score</th>
+                                <th>RMSE</th>
+                                <th>Convergence</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in top_performers %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ loop.index }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ data.target }}</strong>
+                                </td>
+                                <td>
+                                    <span class="algorithm-badge badge-{{ data.algorithm.lower() }}">
+                                        {{ data.algorithm }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="r2-score r2-excellent">
+                                        {{ "%.4f"|format(data.r2_score) }}
+                                    </span>
+                                </td>
+                                <td>{{ "%.4f"|format(data.rmse) }}</td>
+                                <td>{{ data.convergence_iteration }} iterations</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Excellent
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                <h5>Detailed Results</h5>
+                <p>View comprehensive optimization results for all target variables</p>
+                <a href="{{ url_for('results') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-right me-1"></i>View Results
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-cogs fa-3x text-info mb-3"></i>
+                <h5>Algorithm Analysis</h5>
+                <p>Compare performance of PSO, SA, and AFSA optimization algorithms</p>
+                <a href="{{ url_for('algorithms') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-right me-1"></i>Compare Algorithms
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-bar fa-3x text-success mb-3"></i>
+                <h5>Interactive Charts</h5>
+                <p>Explore interactive visualizations and convergence analysis</p>
+                <a href="{{ url_for('visualization') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-right me-1"></i>Explore Charts
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // R² Scores Chart
+    const ctx1 = document.getElementById('r2ScoresChart').getContext('2d');
+    const r2Data = {
+        labels: [{% for data in optimization_data %}'{{ data.target }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'R² Score',
+            data: [{% for data in optimization_data %}{{ data.r2_score }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                {% for data in optimization_data %}
+                {% if data.algorithm == 'PSO' %}'#FF6B6B'
+                {% elif data.algorithm == 'SA' %}'#4ECDC4'
+                {% else %}'#45B7D1'{% endif %}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: '#fff',
+            borderWidth: 2,
+            borderRadius: 5
+        }]
+    };
+    
+    new Chart(ctx1, {
+        type: 'bar',
+        data: r2Data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const algorithms = [{% for data in optimization_data %}'{{ data.algorithm }}'{% if not loop.last %},{% endif %}{% endfor %}];
+                            return 'Algorithm: ' + algorithms[context.dataIndex];
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1.0,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(2);
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                bar: {
+                    borderSkipped: false,
+                }
+            }
+        }
+    });
+    
+    // Algorithm Distribution Chart
+    const ctx2 = document.getElementById('algorithmChart').getContext('2d');
+    const algorithmCounts = {};
+    {% for data in optimization_data %}
+    algorithmCounts['{{ data.algorithm }}'] = (algorithmCounts['{{ data.algorithm }}'] || 0) + 1;
+    {% endfor %}
+    
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(algorithmCounts),
+            datasets: [{
+                data: Object.values(algorithmCounts),
+                backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1'],
+                borderWidth: 3,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

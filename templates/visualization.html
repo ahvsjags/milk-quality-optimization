@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Visualization - Milk Quality Optimization{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <h1 class="display-5 mb-3">
+                    <i class="fas fa-chart-bar text-primary me-3"></i>
+                    Interactive Visualizations
+                </h1>
+                <p class="lead">
+                    Explore optimization results through interactive charts and convergence analysis
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Control Panel -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sliders-h me-2"></i>
+                    Visualization Controls
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Select Target Variable:</label>
+                        <select class="form-select" id="targetSelect">
+                            <option value="all">All Targets</option>
+                            <option value="Milky">Milky / 奶香味</option>
+                            <option value="Fatty">Fatty / 脂香味</option>
+                            <option value="Cooked">Cooked / 蒸煮味</option>
+                            <option value="Oxidized">Oxidized / 氧化味</option>
+                            <option value="Sweet">Sweet / 甜味</option>
+                            <option value="Fresh">Fresh / 青草味</option>
+                            <option value="Preference">Preference / 喜好度</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Chart Type:</label>
+                        <select class="form-select" id="chartTypeSelect">
+                            <option value="convergence">Convergence Analysis</option>
+                            <option value="performance">Performance Comparison</option>
+                            <option value="scatter">Scatter Plot Analysis</option>
+                            <option value="heatmap">Performance Heatmap</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Algorithm Filter:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="checkbox" class="btn-check" id="psoCb" checked>
+                            <label class="btn btn-outline-danger" for="psoCb">PSO</label>
+                            
+                            <input type="checkbox" class="btn-check" id="saCb" checked>
+                            <label class="btn btn-outline-info" for="saCb">SA</label>
+                            
+                            <input type="checkbox" class="btn-check" id="afsaCb" checked>
+                            <label class="btn btn-outline-primary" for="afsaCb">AFSA</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Visualization Area -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area me-2"></i>
+                    <span id="chartTitle">Convergence Analysis</span>
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="downloadChart()">
+                    <i class="fas fa-download me-1"></i>Download Chart
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="mainChart" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Charts -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Algorithm Success Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="successChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Performance Trends
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="trendChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Panel -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Real-time Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="statsPanel">
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-primary" id="selectedCount">—</div>
+                            <div class="metric-label">Selected Targets</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-success" id="avgR2">—</div>
+                            <div class="metric-label">Average R²</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-info" id="avgTime">—</div>
+                            <div class="metric-label">Avg Time (s)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-warning" id="successRate">—</div>
+                            <div class="metric-label">Success Rate (%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global data
+let optimizationData = [];
+let currentChart = null;
+const targetLabels = {
+    Milky: 'Milky / 奶香味',
+    Fatty: 'Fatty / 脂香味',
+    Cooked: 'Cooked / 蒸煮味',
+    Oxidized: 'Oxidized / 氧化味',
+    Sweet: 'Sweet / 甜味',
+    Fresh: 'Fresh / 青草味',
+    Preference: 'Preference / 喜好度'
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load data from API
+    loadOptimizationData();
+    
+    // Event listeners
+    document.getElementById('targetSelect').addEventListener('change', updateVisualization);
+    document.getElementById('chartTypeSelect').addEventListener('change', updateVisualization);
+    document.getElementById('psoCb').addEventListener('change', updateVisualization);
+    document.getElementById('saCb').addEventListener('change', updateVisualization);
+    document.getElementById('afsaCb').addEventListener('change', updateVisualization);
+});
+
+async function loadOptimizationData() {
+    try {
+        // Load convergence data
+        const response = await fetch('/api/convergence_data');
+        optimizationData = await response.json();
+        
+        // Initialize visualization
+        updateVisualization();
+    } catch (error) {
+        console.error('Error loading data:', error);
+        // Fallback to static data
+        initializeFallbackData();
+    }
+}
+
+function initializeFallbackData() {
+    // Fallback data if API fails
+    optimizationData = [
+        {
+            target: 'Milky',
+            algorithm: 'PSO',
+            iterations: Array.from({length: 71}, (_, i) => i),
+            scores: Array.from({length: 71}, (_, i) => 0.3 + (0.806 - 0.3) * (1 - Math.exp(-3 * i / 71))),
+            execution_time: 41.3
+        },
+        // Add more fallback data as needed
+    ];
+    updateVisualization();
+    updateSecondaryCharts(filteredData);
+}
+
+function updateVisualization() {
+    const selectedTarget = document.getElementById('targetSelect').value;
+    const chartType = document.getElementById('chartTypeSelect').value;
+    const selectedAlgorithms = getSelectedAlgorithms();
+    
+    // Filter data
+    let filteredData = optimizationData.filter(d => 
+        selectedAlgorithms.includes(d.algorithm) &&
+        (selectedTarget === 'all' || d.target === selectedTarget)
+    );
+    
+    // Update chart title
+    const chartTitle = document.getElementById('chartTitle');
+    chartTitle.textContent = getChartTitle(chartType, selectedTarget);
+    
+    // Create visualization based on type
+    switch(chartType) {
+        case 'convergence':
+            createConvergenceChart(filteredData);
+            break;
+        case 'performance':
+            createPerformanceChart(filteredData);
+            break;
+        case 'scatter':
+            createScatterChart(filteredData);
+            break;
+        case 'heatmap':
+            createHeatmapChart(filteredData);
+            break;
+    }
+    
+    // Update statistics
+    updateStatistics(filteredData);
+    updateSecondaryCharts(filteredData);
+}
+
+function getSelectedAlgorithms() {
+    const algorithms = [];
+    if (document.getElementById('psoCb').checked) algorithms.push('PSO');
+    if (document.getElementById('saCb').checked) algorithms.push('SA');
+    if (document.getElementById('afsaCb').checked) algorithms.push('AFSA');
+    return algorithms;
+}
+
+function getChartTitle(chartType, target) {
+    const targetText = target === 'all' ? 'All Targets' : targetLabels[target];
+    switch(chartType) {
+        case 'convergence': return `Convergence Analysis - ${targetText}`;
+        case 'performance': return `Performance Comparison - ${targetText}`;
+        case 'scatter': return `Scatter Plot Analysis - ${targetText}`;
+        case 'heatmap': return `Performance Heatmap - ${targetText}`;
+        default: return 'Optimization Analysis';
+    }
+}
+
+function showEmptyChart(message) {
+    Plotly.react('mainChart', [], {
+        annotations: [{
+            text: message,
+            showarrow: false,
+            font: {size: 18, color: '#6c757d'}
+        }],
+        xaxis: {visible: false},
+        yaxis: {visible: false},
+        height: 500,
+        margin: {l: 30, r: 30, t: 30, b: 30}
+    }, {responsive: true});
+}
+
+function createConvergenceChart(data) {
+    if (!data.length) {
+        showEmptyChart('Select at least one algorithm to view its convergence.');
+        return;
+    }
+    const traces = data.map(d => ({
+        x: d.iterations,
+        y: d.scores,
+        type: 'scatter',
+        mode: 'lines',
+        name: `${d.algorithm} - ${targetLabels[d.target] || d.target}`,
+        line: {
+            color: getAlgorithmColor(d.algorithm),
+            width: 3
+        }
+    }));
+    
+    // Add target line
+    traces.push({
+        x: [0, Math.max(...data.map(d => Math.max(...d.iterations)))],
+        y: [0.7, 0.7],
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Target R² = 0.7',
+        line: {
+            color: 'red',
+            dash: 'dash',
+            width: 2
+        }
+    });
+    
+    const layout = {
+        title: 'Optimization Convergence',
+        xaxis: { title: 'Iteration' },
+        yaxis: { title: 'R² Score', range: [0.2, 1.0] },
+        showlegend: true,
+        height: 500
+    };
+    
+    Plotly.newPlot('mainChart', traces, layout, {responsive: true});
+}
+
+function createPerformanceChart(data) {
+    if (!data.length) {
+        showEmptyChart('No optimization result matches the selected filters.');
+        return;
+    }
+    const targets = [...new Set(data.map(d => d.target))];
+    const algorithms = [...new Set(data.map(d => d.algorithm))];
+    
+    const traces = algorithms.map(alg => {
+        const scores = targets.map(target => {
+            const item = data.find(d => d.target === target && d.algorithm === alg);
+            return item ? item.scores[item.scores.length - 1] : 0;
+        });
+        
+        return {
+            x: targets.map(target => targetLabels[target] || target),
+            y: scores,
+            type: 'bar',
+            name: alg,
+            marker: { color: getAlgorithmColor(alg) }
+        };
+    });
+    
+    const layout = {
+        title: 'Final Performance Comparison',
+        xaxis: { title: 'Target Variable' },
+        yaxis: { title: 'R² Score', range: [0.7, 1.0] },
+        barmode: 'group',
+        height: 500
+    };
+    
+    Plotly.newPlot('mainChart', traces, layout, {responsive: true});
+}
+
+function createScatterChart(data) {
+    if (!data.length) {
+        showEmptyChart('No optimization result matches the selected filters.');
+        return;
+    }
+    const traces = data.map(d => ({
+        x: [d.iterations.length], // Convergence iterations
+        y: [d.scores[d.scores.length - 1]], // Final R² score
+        type: 'scatter',
+        mode: 'markers',
+        name: `${d.algorithm} - ${targetLabels[d.target] || d.target}`,
+        marker: {
+            color: getAlgorithmColor(d.algorithm),
+            size: 12,
+            symbol: getAlgorithmSymbol(d.algorithm)
+        },
+        text: `${targetLabels[d.target] || d.target}<br>R²: ${d.scores[d.scores.length - 1].toFixed(4)}<br>Iterations: ${d.iterations.length}`,
+        hovertemplate: '%{text}<extra></extra>'
+    }));
+    
+    const layout = {
+        title: 'Convergence Speed vs Final Performance',
+        xaxis: { title: 'Convergence Iterations' },
+        yaxis: { title: 'Final R² Score', range: [0.7, 1.0] },
+        showlegend: true,
+        height: 500
+    };
+    
+    Plotly.newPlot('mainChart', traces, layout, {responsive: true});
+}
+
+function createHeatmapChart(data) {
+    if (!data.length) {
+        showEmptyChart('No optimization result matches the selected filters.');
+        return;
+    }
+    const targets = [...new Set(data.map(d => d.target))];
+    const algorithms = [...new Set(data.map(d => d.algorithm))];
+    
+    const z = algorithms.map(alg => 
+        targets.map(target => {
+            const item = data.find(d => d.target === target && d.algorithm === alg);
+            return item ? item.scores[item.scores.length - 1] : 0;
+        })
+    );
+    
+    const trace = {
+        z: z,
+        x: targets.map(target => targetLabels[target] || target),
+        y: algorithms,
+        type: 'heatmap',
+        colorscale: 'Viridis',
+        showscale: true,
+        hoverongaps: false
+    };
+    
+    const layout = {
+        title: 'Performance Heatmap',
+        xaxis: { title: 'Target Variable' },
+        yaxis: { title: 'Algorithm' },
+        height: 500
+    };
+    
+    Plotly.newPlot('mainChart', [trace], layout, {responsive: true});
+}
+
+function updateSecondaryCharts(data) {
+    const algorithms = ['PSO', 'SA', 'AFSA'];
+    const wins = algorithms.map(algorithm => data.filter(item => item.algorithm === algorithm).length);
+    const colors = algorithms.map(getAlgorithmColor);
+    const hasData = data.length > 0;
+
+    Plotly.react('successChart', hasData ? [{
+        values: wins,
+        labels: algorithms,
+        type: 'pie',
+        hole: 0.35,
+        textinfo: 'label+percent',
+        marker: {colors}
+    }] : [], {
+        title: 'Algorithm Coverage',
+        height: 300,
+        showlegend: false,
+        annotations: hasData ? [] : [{text: 'No data selected', showarrow: false}]
+    }, {responsive: true});
+
+    const orderedTargets = Object.keys(targetLabels).filter(target => data.some(item => item.target === target));
+    const scores = orderedTargets.map(target => {
+        const item = data.find(entry => entry.target === target);
+        return item ? item.scores[item.scores.length - 1] : null;
+    });
+    Plotly.react('trendChart', hasData ? [{
+        x: orderedTargets.map(target => targetLabels[target]),
+        y: scores,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: {color: '#2E8B57', width: 3},
+        marker: {size: 9, color: '#4ECDC4'},
+        hovertemplate: '%{x}<br>R²: %{y:.4f}<extra></extra>'
+    }] : [], {
+        title: 'Performance Trend',
+        xaxis: {title: 'Sensory Attribute', tickangle: -20},
+        yaxis: {title: 'R² Score', range: [0.65, 0.9]},
+        height: 300,
+        annotations: hasData ? [] : [{text: 'No data selected', showarrow: false}]
+    }, {responsive: true});
+}
+
+function updateStatistics(data) {
+    const selectedCount = data.length;
+    const avgR2 = data.length > 0 ? 
+        data.reduce((sum, d) => sum + d.scores[d.scores.length - 1], 0) / data.length : 0;
+    const avgTime = data.length > 0 ?
+        data.reduce((sum, d) => sum + (d.execution_time || 0), 0) / data.length : 0;
+    const successRate = data.length > 0 ?
+        data.filter(d => d.scores[d.scores.length - 1] >= 0.7).length / data.length * 100 : 0;
+    
+    document.getElementById('selectedCount').textContent = selectedCount;
+    document.getElementById('avgR2').textContent = avgR2.toFixed(4);
+    document.getElementById('avgTime').textContent = avgTime.toFixed(1);
+    document.getElementById('successRate').textContent = successRate.toFixed(1);
+}
+
+function getAlgorithmColor(algorithm) {
+    switch(algorithm) {
+        case 'PSO': return '#FF6B6B';
+        case 'SA': return '#4ECDC4';
+        case 'AFSA': return '#45B7D1';
+        default: return '#333333';
+    }
+}
+
+function getAlgorithmSymbol(algorithm) {
+    switch(algorithm) {
+        case 'PSO': return 'circle';
+        case 'SA': return 'square';
+        case 'AFSA': return 'diamond';
+        default: return 'circle';
+    }
+}
+
+function downloadChart() {
+    Plotly.downloadImage('mainChart', {
+        format: 'png',
+        width: 1200,
+        height: 600,
+        filename: 'optimization_chart'
+    });
+}
+</script>
+{% endblock %}

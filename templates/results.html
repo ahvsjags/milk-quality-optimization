@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Detailed Results - Milk Quality Optimization{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <h1 class="display-5 mb-3">
+                    <i class="fas fa-chart-line text-primary me-3"></i>
+                    Detailed Optimization Results
+                </h1>
+                <p class="lead">
+                    Comprehensive analysis of all target variables and their optimization performance
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Filter by Algorithm</h6>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="algorithmFilter" id="all" value="all" checked>
+                    <label class="btn btn-outline-primary" for="all">All</label>
+                    
+                    <input type="radio" class="btn-check" name="algorithmFilter" id="pso" value="PSO">
+                    <label class="btn btn-outline-primary" for="pso">PSO</label>
+                    
+                    <input type="radio" class="btn-check" name="algorithmFilter" id="sa" value="SA">
+                    <label class="btn btn-outline-primary" for="sa">SA</label>
+                    
+                    <input type="radio" class="btn-check" name="algorithmFilter" id="afsa" value="AFSA">
+                    <label class="btn btn-outline-primary" for="afsa">AFSA</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Search Target Variable</h6>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search by target name...">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Optimization Results Summary
+                </h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadResults('csv')">
+                        <i class="fas fa-download me-1"></i>CSV
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadResults('json')">
+                        <i class="fas fa-download me-1"></i>JSON
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="resultsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Target Variable</th>
+                                <th>Algorithm</th>
+                                <th>R² Score</th>
+                                <th>RMSE</th>
+                                <th>Execution Time</th>
+                                <th>Convergence</th>
+                                <th>Best Parameters</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in optimization_data|sort(attribute='r2_score', reverse=true) %}
+                            <tr data-algorithm="{{ data.algorithm }}" data-target="{{ data.target.lower() }}">
+                                <td>
+                                    <strong class="text-primary">{{ data.target }}</strong>
+                                </td>
+                                <td>
+                                    <span class="algorithm-badge badge-{{ data.algorithm.lower() }}">
+                                        {{ data.algorithm }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="r2-score {% if data.r2_score >= 0.8 %}r2-excellent{% else %}r2-good{% endif %}">
+                                        {{ "%.4f"|format(data.r2_score) }}
+                                    </span>
+                                </td>
+                                <td>{{ "%.4f"|format(data.rmse) }}</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ "%.1f"|format(data.execution_time) }}s
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ data.convergence_iteration }} iter
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" 
+                                            onclick="showParameters('{{ data.target }}', '{{ data.best_params|replace("'", "\\'") }}')">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </button>
+                                </td>
+                                <td>
+                                    {% if data.r2_score >= 0.8 %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-star me-1"></i>Excellent
+                                    </span>
+                                    {% elif data.r2_score >= 0.7 %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-check me-1"></i>Good
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-exclamation me-1"></i>Moderate
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Comparison Charts -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area me-2"></i>
+                    R² Score Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="r2DistributionChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    Execution Time vs R² Score
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="timeVsR2Chart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistical Summary -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Statistical Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <h6>R² Score Statistics</h6>
+                        <p><strong>Mean:</strong> {{ "%.4f"|format(optimization_data|map(attribute='r2_score')|list|sum / optimization_data|length) }}</p>
+                        <p><strong>Max:</strong> {{ "%.4f"|format(optimization_data|map(attribute='r2_score')|max) }}</p>
+                        <p><strong>Min:</strong> {{ "%.4f"|format(optimization_data|map(attribute='r2_score')|min) }}</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h6>RMSE Statistics</h6>
+                        <p><strong>Mean:</strong> {{ "%.4f"|format(optimization_data|map(attribute='rmse')|list|sum / optimization_data|length) }}</p>
+                        <p><strong>Max:</strong> {{ "%.4f"|format(optimization_data|map(attribute='rmse')|max) }}</p>
+                        <p><strong>Min:</strong> {{ "%.4f"|format(optimization_data|map(attribute='rmse')|min) }}</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h6>Execution Time</h6>
+                        <p><strong>Mean:</strong> {{ "%.1f"|format(optimization_data|map(attribute='execution_time')|list|sum / optimization_data|length) }}s</p>
+                        <p><strong>Max:</strong> {{ "%.1f"|format(optimization_data|map(attribute='execution_time')|max) }}s</p>
+                        <p><strong>Min:</strong> {{ "%.1f"|format(optimization_data|map(attribute='execution_time')|min) }}s</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h6>Convergence</h6>
+                        <p><strong>Mean:</strong> {{ "%.0f"|format(optimization_data|map(attribute='convergence_iteration')|list|sum / optimization_data|length) }} iter</p>
+                        <p><strong>Max:</strong> {{ optimization_data|map(attribute='convergence_iteration')|max }} iter</p>
+                        <p><strong>Min:</strong> {{ optimization_data|map(attribute='convergence_iteration')|min }} iter</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parameters Modal -->
+<div class="modal fade" id="parametersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Optimized Parameters</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="parametersContent">
+                <!-- Parameters will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
+    const algorithmFilters = document.querySelectorAll('input[name="algorithmFilter"]');
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('#resultsTable tbody tr');
+    
+    function filterTable() {
+        const selectedAlgorithm = document.querySelector('input[name="algorithmFilter"]:checked').value;
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const algorithm = row.dataset.algorithm;
+            const target = row.dataset.target;
+            
+            const algorithmMatch = selectedAlgorithm === 'all' || algorithm === selectedAlgorithm;
+            const searchMatch = target.includes(searchTerm);
+            
+            row.style.display = algorithmMatch && searchMatch ? '' : 'none';
+        });
+    }
+    
+    algorithmFilters.forEach(filter => {
+        filter.addEventListener('change', filterTable);
+    });
+    
+    searchInput.addEventListener('input', filterTable);
+    
+    // Charts
+    const r2Data = [{% for data in optimization_data %}{{ data.r2_score }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const timeData = [{% for data in optimization_data %}{{ data.execution_time }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const labels = [{% for data in optimization_data %}'{{ data.target }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    // R² Distribution Chart
+    const ctx1 = document.getElementById('r2DistributionChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'R² Score',
+                data: r2Data,
+                borderColor: '#2E8B57',
+                backgroundColor: 'rgba(46, 139, 87, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1.0
+                }
+            }
+        }
+    });
+    
+    // Time vs R² Scatter Chart
+    const ctx2 = document.getElementById('timeVsR2Chart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Execution Time vs R² Score',
+                data: timeData.map((time, i) => ({x: time, y: r2Data[i]})),
+                backgroundColor: '#4ECDC4',
+                borderColor: '#2E8B57',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Execution Time (seconds)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'R² Score'
+                    },
+                    min: 0.7,
+                    max: 1.0
+                }
+            }
+        }
+    });
+});
+
+function showParameters(target, params) {
+    const modal = new bootstrap.Modal(document.getElementById('parametersModal'));
+    const content = document.getElementById('parametersContent');
+    
+    // Parse parameters string
+    const parsedParams = JSON.parse(params.replace(/'/g, '"'));
+    
+    let html = `<h6>Target: ${target}</h6><hr>`;
+    for (const [key, value] of Object.entries(parsedParams)) {
+        html += `<p><strong>${key}:</strong> ${value}</p>`;
+    }
+    
+    content.innerHTML = html;
+    modal.show();
+}
+
+function downloadResults(format) {
+    window.location.href = `/download/${format}`;
+}
+</script>
+{% endblock %}

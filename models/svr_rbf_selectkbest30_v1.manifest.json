@@ -1,0 +1,395 @@
+{
+  "schema_version": 1,
+  "model_version": "svr-rbf-selectkbest30-v1",
+  "status": "FROZEN",
+  "artifact": "svr_rbf_selectkbest30_v1.joblib",
+  "artifact_sha256": "b4a2ae38f1b43bc84dd161d61dd12d8ba950285abf71b66c1bc7b96641888aae",
+  "frozen_at_utc": "2026-08-19T05:27:08+00:00",
+  "training_data": {
+    "file": "yc.csv",
+    "sha256": "592e675433f8f8990e4602303c2269c5393dcb1fb75d925ad68f99ad1c8b58be",
+    "rows": 245
+  },
+  "model_family": "SVR_rbf",
+  "pipeline": [
+    "StandardScaler",
+    "SelectKBest(f_regression, k=30)",
+    "SVR(kernel='rbf')"
+  ],
+  "targets": {
+    "Milky": {
+      "label": "奶香味",
+      "optimizer": "PSO",
+      "range": [
+        0.0,
+        5.0
+      ],
+      "svr": {
+        "C": 35.2,
+        "epsilon": 0.041,
+        "gamma": 0.095
+      }
+    },
+    "Fatty": {
+      "label": "脂香味",
+      "optimizer": "AFSA",
+      "range": [
+        0.0,
+        5.0
+      ],
+      "svr": {
+        "C": 29.8,
+        "epsilon": 0.047,
+        "gamma": 0.083
+      }
+    },
+    "Cooked": {
+      "label": "蒸煮味",
+      "optimizer": "SA",
+      "range": [
+        0.0,
+        5.0
+      ],
+      "svr": {
+        "C": 31.5,
+        "epsilon": 0.043,
+        "gamma": 0.088
+      }
+    },
+    "Oxidized": {
+      "label": "氧化味",
+      "optimizer": "PSO",
+      "range": [
+        0.0,
+        5.0
+      ],
+      "svr": {
+        "C": 27.9,
+        "epsilon": 0.049,
+        "gamma": 0.081
+      }
+    },
+    "Sweet": {
+      "label": "甜味",
+      "optimizer": "AFSA",
+      "range": [
+        0.0,
+        5.0
+      ],
+      "svr": {
+        "C": 33.6,
+        "epsilon": 0.039,
+        "gamma": 0.091
+      }
+    },
+    "Fresh": {
+      "label": "青草味",
+      "optimizer": "PSO",
+      "range": [
+        0.0,
+        5.0
+      ],
+      "svr": {
+        "C": 38.4,
+        "epsilon": 0.035,
+        "gamma": 0.098
+      }
+    },
+    "Preference": {
+      "label": "喜好度",
+      "optimizer": "GridSearchCV",
+      "range": [
+        0.0,
+        10.0
+      ],
+      "svr": {
+        "C": 5.0,
+        "epsilon": 0.2,
+        "gamma": 0.01
+      }
+    }
+  },
+  "selected_features": {
+    "Milky": [
+      "Pentyl formate",
+      "4-Octanone",
+      "6-Methyl-5-hepten-2-one",
+      "Dimethyl trisulfide",
+      "Nonanal",
+      "1-Heptanol",
+      "Acetic acid",
+      "Propanoic acid",
+      "Dimethyl sulfoxide",
+      "污-Butyrolactone",
+      "3,7-Dimethyl-1-octanol",
+      "1-Nonanol",
+      "Pentanoic acid",
+      "2(5H)-Furanone",
+      "汛-Hexalactone",
+      "2-Tridecanone",
+      "Dimethyl sulfone",
+      "1-Dodecanol",
+      "汛-Octalactone",
+      "Phenol",
+      "2-Pentadecanone",
+      "污-Nonalactone",
+      "Pantolactone",
+      "汛-Nonalactone",
+      "Nonanoic acid",
+      "汛-Decalactone",
+      "污-Dodecalactone",
+      "Undecylenic acid",
+      "汛-Dodecalactone",
+      "Tetradecanoic acid"
+    ],
+    "Fatty": [
+      "Dimethyl disulfide",
+      "5-Methyl-2-hexanone",
+      "Octanal",
+      "6-Methyl-5-hepten-2-one",
+      "3-Nonanone",
+      "Dimethyl trisulfide",
+      "Nonanal",
+      "1-Heptanol",
+      "Acetic acid",
+      "2-Decanone",
+      "(E)-2-Nonenal",
+      "Propanoic acid",
+      "(E)-2-Octenol",
+      "污-Butyrolactone",
+      "3,7-Dimethyl-1-octanol",
+      "3-Furanmethanol",
+      "1-Nonanol",
+      "2(5H)-Furanone",
+      "汛-Hexalactone",
+      "Dimethyl sulfone",
+      "2-Hydroxy-5-methylacetophenone",
+      "1-Dodecanol",
+      "汛-Octalactone",
+      "Phenol",
+      "污-Nonalactone",
+      "汛-Nonalactone",
+      "汛-Decalactone",
+      "污-Dodecalactone",
+      "Undecylenic acid",
+      "汛-Dodecalactone"
+    ],
+    "Cooked": [
+      "2,3-Butanedione",
+      "Hexanal",
+      "1-Butanol",
+      "5-Methyl-2-hexanone",
+      "Octanal",
+      "3-Methyl-1-pentanol",
+      "1-Hexanol",
+      "Ethyl caprylate",
+      "1-Octen-3-ol",
+      "(E)-2-Nonenal",
+      "1-Octanol",
+      "Dimethyl sulfoxide",
+      "Butyric acid",
+      "Acetophenone",
+      "1-Nonanol",
+      "Pentanoic acid",
+      "2-Phenylethyl acetate",
+      "Hexanoic acid",
+      "2-Hydroxy-5-methylacetophenone",
+      "2-Ethyl-1-hexanoic acid",
+      "Heptanoic acid",
+      "汛-Octalactone",
+      "Octanoic acid",
+      "Nonanoic acid",
+      "Ethyl palmitate",
+      "Decanoic acid",
+      "9-Decenoic acid",
+      "Undecanoic acid",
+      "Dodecanoic acid",
+      "Tetradecanoic acid"
+    ],
+    "Oxidized": [
+      "1-Octene",
+      "2,3-Butanedione",
+      "Hexanal",
+      "2-Heptanone",
+      "Ethyl caproate",
+      "2-Octanone",
+      "Octanal",
+      "3-Methyl-1-pentanol",
+      "6-Methyl-5-hepten-2-one",
+      "1-Hexanol",
+      "Ethyl caprylate",
+      "1-Octen-3-ol",
+      "1-Heptanol",
+      "Acetic acid",
+      "Propanoic acid",
+      "1-Octanol",
+      "Dimethyl sulfoxide",
+      "2-Furanmethanol",
+      "2-Undecanone",
+      "Acetophenone",
+      "2-Tridecanone",
+      "2-Phenylethyl acetate",
+      "2-Ethyl-1-hexanoic acid",
+      "Heptanoic acid",
+      "2-Pentadecanone",
+      "污-Nonalactone",
+      "Nonanoic acid",
+      "Undecanoic acid",
+      "Dodecanoic acid",
+      "Tetradecanoic acid"
+    ],
+    "Sweet": [
+      "Pentyl formate",
+      "4-Octanone",
+      "Octanal",
+      "6-Methyl-5-hepten-2-one",
+      "Dimethyl trisulfide",
+      "Nonanal",
+      "1-Heptanol",
+      "Acetic acid",
+      "Propanoic acid",
+      "Dimethyl sulfoxide",
+      "(E)-2-Octenol",
+      "污-Butyrolactone",
+      "3,7-Dimethyl-1-octanol",
+      "1-Nonanol",
+      "Pentanoic acid",
+      "2(5H)-Furanone",
+      "汛-Hexalactone",
+      "1-Dodecanol",
+      "汛-Octalactone",
+      "2-Pentadecanone",
+      "Furaneol",
+      "污-Nonalactone",
+      "Pantolactone",
+      "汛-Nonalactone",
+      "Nonanoic acid",
+      "汛-Decalactone",
+      "Methyl palmitate",
+      "污-Dodecalactone",
+      "汛-Dodecalactone",
+      "Tetradecanoic acid"
+    ],
+    "Fresh": [
+      "Dimethyl disulfide",
+      "3-Hexanone",
+      "Hexanal",
+      "1-Butanol",
+      "4-Octanone",
+      "Ethyl caproate",
+      "1-Pentanol",
+      "Hexyl acetate",
+      "Acetoin",
+      "Octanal",
+      "3-Methyl-1-pentanol",
+      "1-Hexanol",
+      "2-Nonanone",
+      "Nonanal",
+      "Ethyl caprylate",
+      "(E)-2-Octenal",
+      "1-Octen-3-ol",
+      "2-Ethyl-1-hexanol",
+      "Benzaldehyde",
+      "(E)-2-Nonenal",
+      "1-Octanol",
+      "(E)-2-Octenol",
+      "Butyric acid",
+      "Acetophenone",
+      "3,7-Dimethyl-1-octanol",
+      "1-Nonanol",
+      "Hexanoic acid",
+      "Dimethyl sulfone",
+      "Phenol",
+      "Undecylenic acid"
+    ],
+    "Preference": [
+      "Pentyl formate",
+      "4-Octanone",
+      "6-Methyl-5-hepten-2-one",
+      "3-Nonanone",
+      "Dimethyl trisulfide",
+      "Nonanal",
+      "Acetic acid",
+      "Propanoic acid",
+      "Dimethyl sulfoxide",
+      "污-Butyrolactone",
+      "3,7-Dimethyl-1-octanol",
+      "1-Nonanol",
+      "Pentanoic acid",
+      "2(5H)-Furanone",
+      "汛-Hexalactone",
+      "Dimethyl sulfone",
+      "2-Hydroxy-5-methylacetophenone",
+      "2-Ethyl-1-hexanoic acid",
+      "1-Dodecanol",
+      "汛-Octalactone",
+      "Phenol",
+      "2-Pentadecanone",
+      "污-Nonalactone",
+      "汛-Nonalactone",
+      "Nonanoic acid",
+      "汛-Decalactone",
+      "2,4-Di-tert-butylphenol",
+      "污-Dodecalactone",
+      "汛-Dodecalactone",
+      "Tetradecanoic acid"
+    ]
+  },
+  "holdout_evaluation": {
+    "Milky": {
+      "test_rows": 74,
+      "r2": -0.7497152689561091,
+      "rmse": 0.48799087882594033,
+      "mae": 0.39087822618829615
+    },
+    "Fatty": {
+      "test_rows": 74,
+      "r2": -0.3531785266659999,
+      "rmse": 0.5020315511604473,
+      "mae": 0.418419545444683
+    },
+    "Cooked": {
+      "test_rows": 74,
+      "r2": -0.22293571728558526,
+      "rmse": 0.4309193524903864,
+      "mae": 0.3378537163465755
+    },
+    "Oxidized": {
+      "test_rows": 74,
+      "r2": -0.1460957551870974,
+      "rmse": 0.47264404880347216,
+      "mae": 0.3627208062255773
+    },
+    "Sweet": {
+      "test_rows": 74,
+      "r2": -0.757832683347333,
+      "rmse": 0.647416463333653,
+      "mae": 0.5050251227911778
+    },
+    "Fresh": {
+      "test_rows": 74,
+      "r2": 0.08105753552259087,
+      "rmse": 0.3213177538653369,
+      "mae": 0.2512640833425647
+    },
+    "Preference": {
+      "test_rows": 74,
+      "r2": 0.001939216481876671,
+      "rmse": 0.6823689862769714,
+      "mae": 0.5538718185339253
+    }
+  },
+  "domain_guard": {
+    "method": "training_min_max + LedoitWolf_Mahalanobis",
+    "mahalanobis_threshold": 18.277259119222414,
+    "univariate_rule": "warn when any value is outside the training minimum/maximum"
+  },
+  "output_policy": "clip_to_declared_scale",
+  "library_versions": {
+    "scikit_learn": "1.8.0",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "joblib": "1.5.3"
+  },
+  "release_rule": "Do not overwrite. Create a new versioned artifact for any future change."
+}

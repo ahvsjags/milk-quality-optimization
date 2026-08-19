@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Frozen SVR-RBF milk sensory prediction demo with applicability-domain protection.">
+  <title>MilkSense · 牛奶感官预测</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --ink:#16392f; --muted:#61736d; --paper:#f6faf8; --line:#dfeae5; --green:#19734d; --mint:#46c8b2; --blue:#3077e8; --amber:#ef9b28; --danger:#b94b38; --shadow:0 16px 42px rgba(22,57,47,.12); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; min-width:320px; color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; background:linear-gradient(180deg,#f5faf7 0,#edf5f1 48%,#f7faf9 100%); }
+    button,input,select { font:inherit; }
+    .container { width:min(1160px,calc(100% - 36px)); margin:auto; }
+    .nav { position:sticky; top:0; z-index:20; border-bottom:1px solid rgba(255,255,255,.2); background:rgba(15,57,45,.93); backdrop-filter:blur(14px); }
+    .nav-inner { min-height:66px; display:flex; align-items:center; gap:22px; }
+    .brand { display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; letter-spacing:.1px; text-decoration:none; font-size:1.05rem; white-space:nowrap; }
+    .brand-mark { width:32px; height:32px; display:grid; place-items:center; border-radius:10px; background:linear-gradient(135deg,#61dbc4,#2c9a6a); color:#103529; }
+    .nav-links { display:flex; gap:18px; margin-left:auto; }
+    .nav-links a { color:#d9eee6; text-decoration:none; font-size:.9rem; font-weight:650; }
+    .nav-links a:hover { color:#fff; }
+    .lang-switch { border:1px solid rgba(255,255,255,.42); border-radius:9px; background:transparent; color:#fff; padding:7px 10px; cursor:pointer; font-size:.84rem; font-weight:700; }
+    .hero { padding:70px 0 56px; color:#fff; background:radial-gradient(circle at 80% 17%,rgba(99,233,202,.36),transparent 29%),radial-gradient(circle at 6% 80%,rgba(47,132,238,.28),transparent 35%),linear-gradient(130deg,#0c3b31,#1a714d 58%,#3fc5b6); overflow:hidden; }
+    .hero-grid { display:grid; grid-template-columns:1.25fr .75fr; gap:40px; align-items:center; }
+    .eyebrow { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid rgba(255,255,255,.3); border-radius:999px; background:rgba(255,255,255,.12); font-size:.77rem; letter-spacing:.08em; font-weight:800; text-transform:uppercase; }
+    h1 { max-width:700px; margin:17px 0 15px; font-size:clamp(2.25rem,5vw,4.35rem); letter-spacing:-.055em; line-height:1.02; }
+    .hero p { max-width:680px; margin:0; color:#e6f7ef; font-size:1.08rem; line-height:1.72; }
+    .hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:25px; }
+    .btn { border:0; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:43px; padding:0 16px; text-decoration:none; font-weight:780; transition:transform .18s,box-shadow .18s,background .18s; }
+    .btn:hover { transform:translateY(-2px); box-shadow:0 7px 18px rgba(0,0,0,.13); }
+    .btn-primary { color:#08372c; background:#fff; }
+    .btn-secondary { color:#fff; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.35); }
+    .hero-stat { position:relative; display:grid; gap:13px; padding:25px; border:1px solid rgba(255,255,255,.25); border-radius:22px; background:linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,.06)); box-shadow:0 24px 45px rgba(4,44,34,.19); }
+    .hero-stat::before { content:""; position:absolute; right:-20px; top:-20px; width:86px; height:86px; border-radius:50%; background:rgba(255,255,255,.13); }
+    .hero-stat span { color:#dcf6ed; font-size:.84rem; }
+    .hero-stat strong { font-size:1.1rem; overflow-wrap:anywhere; }
+    .hero-stat hr { width:100%; border:0; border-top:1px solid rgba(255,255,255,.24); }
+    .section { padding:54px 0; }
+    .section-title { margin:0; font-size:clamp(1.55rem,3vw,2.25rem); letter-spacing:-.04em; }
+    .section-kicker { margin:7px 0 27px; color:var(--muted); line-height:1.6; }
+    .predict-grid { display:grid; grid-template-columns:minmax(0,1.38fr) minmax(315px,.82fr); gap:24px; align-items:start; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); }
+    .card-head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 21px; border-bottom:1px solid var(--line); }
+    .card-head h2,.card-head h3 { margin:0; font-size:1.03rem; letter-spacing:-.01em; }
+    .tag { display:inline-flex; border-radius:999px; padding:5px 9px; background:#e8f6f0; color:#16704b; font-size:.75rem; font-weight:780; }
+    .form-body { padding:20px; }
+    .sample-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+    label { display:block; color:#38584e; font-size:.82rem; font-weight:750; margin-bottom:6px; }
+    input,select { width:100%; border:1px solid #cdded7; border-radius:10px; min-height:42px; padding:0 11px; color:#143f33; background:#fcfefd; outline:none; transition:border .16s,box-shadow .16s; }
+    input:focus,select:focus { border-color:#32a778; box-shadow:0 0 0 3px rgba(50,167,120,.13); }
+    .toolbar { display:flex; flex-wrap:wrap; gap:9px; margin:14px 0; }
+    .toolbar .search { flex:1 1 180px; }
+    .mini-btn { border:1px solid #b9d3c8; border-radius:9px; background:#f7fbf9; color:#1c6547; min-height:40px; padding:0 11px; cursor:pointer; font-size:.82rem; font-weight:750; }
+    .mini-btn.warning { border-color:#edc784; color:#986313; background:#fffaf0; }
+    .feature-note { display:flex; gap:10px; align-items:center; margin:0 0 12px; padding:10px 12px; border-radius:10px; color:#47675c; background:#f1f8f4; font-size:.81rem; line-height:1.45; }
+    .feature-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; max-height:480px; overflow:auto; padding-right:4px; }
+    .feature { padding:10px; border:1px solid #e1ece6; border-radius:11px; background:#fcfefd; }
+    .feature label { overflow:hidden; margin-bottom:5px; color:#244d3f; text-overflow:ellipsis; white-space:nowrap; }
+    .feature label small { color:#7e9089; font-weight:600; }
+    .feature input { min-height:38px; padding:0 9px; font-size:.92rem; }
+    .range { margin-top:5px; color:#7a8b84; font-size:.69rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .form-actions { display:flex; flex-wrap:wrap; gap:10px; padding-top:18px; }
+    .btn-run { color:#fff; background:linear-gradient(135deg,#19734d,#36aa7d); }
+    .btn-reset { color:#375e50; background:#f5f9f7; border:1px solid #d2e3db; }
+    .form-actions .hint { flex:1 1 170px; align-self:center; color:#74877f; font-size:.76rem; line-height:1.45; }
+    .side-stack { display:grid; gap:18px; }
+    .results { padding:18px; }
+    .empty { min-height:260px; display:grid; place-items:center; text-align:center; color:#799087; }
+    .empty .empty-icon { display:grid; place-items:center; width:58px; height:58px; margin:0 auto 12px; border-radius:18px; color:#2e9b6b; background:#e9f8f1; font-size:1.7rem; }
+    .result-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .result { padding:13px; border:1px solid #e0ebe5; border-radius:12px; background:linear-gradient(145deg,#fff,#f6fcf8); }
+    .result.preference { grid-column:span 2; }
+    .result-top { display:flex; justify-content:space-between; gap:7px; align-items:flex-start; font-size:.78rem; font-weight:800; }
+    .algo { padding:3px 6px; color:#25674d; border-radius:6px; background:#e4f4ec; font-size:.67rem; }
+    .score { margin:9px 0 5px; font-size:1.72rem; color:#16704b; font-weight:850; letter-spacing:-.05em; }
+    .scale { color:#6f837b; font-size:.7rem; }
+    .meter { height:6px; overflow:hidden; margin-top:9px; border-radius:999px; background:#e1eee7; }
+    .meter i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#40c5a1,#2074db); }
+    .model-list { margin:0; padding:18px; display:grid; gap:11px; }
+    .model-row { display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:.79rem; }
+    .model-row dt { color:#6d8279; font-weight:750; }
+    .model-row dd { margin:0; color:#244e40; overflow-wrap:anywhere; }
+    .notice { display:none; margin:0 0 18px; border:1px solid #f1c770; border-left:5px solid var(--amber); border-radius:12px; padding:16px 17px; color:#674813; background:#fff9e9; box-shadow:0 10px 25px rgba(130,91,19,.08); }
+    .notice.show { display:block; }
+    .notice strong { display:block; margin-bottom:5px; }
+    .notice ul { margin:8px 0 0; padding-left:20px; font-size:.84rem; line-height:1.55; }
+    .visual { border-radius:20px; padding:27px; color:#edfdf6; background:linear-gradient(125deg,#123e33,#196f4b 58%,#2ea99c); box-shadow:var(--shadow); }
+    .visual-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:30px; align-items:center; }
+    .visual .section-kicker { color:#ceeee2; margin-bottom:16px; }
+    .scale-legend { display:flex; gap:8px; flex-wrap:wrap; }
+    .legend { padding:5px 8px; border-radius:7px; background:rgba(255,255,255,.12); color:#effff8; font-size:.71rem; font-weight:700; }
+    .chart-wrap { min-height:250px; padding:15px; border-radius:15px; background:rgba(255,255,255,.96); }
+    .method-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+    .method { padding:17px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .method b { display:block; margin-bottom:5px; font-size:.9rem; }
+    .method p { margin:0; color:#667c73; font-size:.77rem; line-height:1.5; }
+    footer { margin-top:15px; padding:28px 0; color:#cfe6dc; background:#103b31; }
+    .foot { display:flex; justify-content:space-between; gap:18px; align-items:center; font-size:.81rem; }
+    .foot a { color:#9fe6d1; }
+    dialog { width:min(500px,calc(100% - 32px)); border:0; border-radius:16px; padding:0; box-shadow:0 24px 80px rgba(0,0,0,.35); }
+    dialog::backdrop { background:rgba(8,31,24,.65); }
+    .dialog-top { padding:17px 20px; color:#5d3b08; background:#ffc85c; font-weight:850; }
+    .dialog-body { padding:20px; line-height:1.55; }
+    .dialog-actions { display:flex; justify-content:flex-end; padding:0 20px 19px; }
+    .hidden { display:none!important; }
+    @media (max-width:860px) { .nav-links { display:none; } .hero { padding:54px 0 42px; } .hero-grid,.predict-grid,.visual-grid { grid-template-columns:1fr; } .hero-stat { max-width:520px; } .method-grid { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:530px) { .container { width:min(100% - 24px,1160px); } .feature-grid,.result-grid { grid-template-columns:1fr; } .result.preference { grid-column:span 1; } .sample-row { grid-template-columns:1fr; } .card-head { padding:15px; } .form-body,.results { padding:14px; } .visual { padding:20px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top"><span class="brand-mark">◈</span><span>MilkSense</span></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#predict" data-i18n="navPredict">在线预测</a>
+        <a href="#visualization" data-i18n="navVisual">结果可视化</a>
+        <a href="#method" data-i18n="navModel">模型说明</a>
+      </nav>
+      <button class="lang-switch" id="languageToggle" type="button" aria-label="Switch language">EN</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow">● <span data-i18n="frozenBadge">FROZEN PRODUCTION MODEL</span></span>
+          <h1 data-i18n="heroTitle">牛奶感官预测，<br>有据可循。</h1>
+          <p data-i18n="heroText">基于已冻结的 SVR-RBF + SelectKBest_30 模型，对 86 种挥发性化合物浓度进行推理，输出六项感官属性与整体喜好度。</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#predict" data-i18n="heroAction">开始预测 →</a>
+            <a class="btn btn-secondary" href="#method" data-i18n="heroMore">查看模型说明</a>
+          </div>
+        </div>
+        <aside class="hero-stat" aria-label="Model summary">
+          <span data-i18n="statVersion">部署版本</span><strong id="modelVersion">Loading frozen model…</strong>
+          <hr><span data-i18n="statOutput">输出量程</span><strong data-i18n="statScale">六项感官属性 0–5 · 喜好度 0–10</strong>
+          <hr><span data-i18n="statDomain">输入防护</span><strong data-i18n="statDomainValue">训练范围 + Mahalanobis 适用域</strong>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="predict">
+      <div class="container">
+        <h2 class="section-title" data-i18n="predictTitle">在线预测工作台</h2>
+        <p class="section-kicker" data-i18n="predictSubtitle">所有预测均由浏览器直接加载固定模型完成；模型参数不会在此页面中被重新训练或更改。</p>
+        <div id="oodNotice" class="notice" role="alert" aria-live="assertive">
+          <strong id="oodTitle">适用域警告</strong>
+          <span id="oodMessage">该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考</span>
+          <ul id="oodReasons"></ul>
+        </div>
+        <div class="predict-grid">
+          <section class="card">
+            <div class="card-head"><h2 data-i18n="inputTitle">化合物浓度输入</h2><span class="tag" id="inputCount">86 项</span></div>
+            <div class="form-body">
+              <div class="sample-row">
+                <div><label for="sampleType" data-i18n="sampleLabel">样品类型</label><select id="sampleType"><option value="milk" data-i18n="milkOption">牛奶 / Milk</option><option value="nonmilk" data-i18n="nonMilkOption">非牛奶 / Non-milk</option><option value="unknown" data-i18n="unknownOption">未知 / Unknown</option></select></div>
+                <div><label for="search" data-i18n="searchLabel">查找化合物</label><input id="search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="例如 Hexanal（己醛）"></div>
+              </div>
+              <div class="toolbar"><button id="stressTest" class="mini-btn warning" type="button" data-i18n="stressTest">⚡ 抗压测试：己醛 ×1000</button><button id="reset" class="mini-btn" type="button" data-i18n="reset">恢复训练中位数</button></div>
+              <p class="feature-note"><span>ⓘ</span><span data-i18n="featureNote">单位：μg/kg。请输入全部 86 项浓度；页面会自动用训练中位数初始化。</span></p>
+              <div class="feature-grid" id="featureGrid" aria-label="Volatile compound inputs"></div>
+              <div class="form-actions"><button id="predictButton" class="btn btn-run" type="button" data-i18n="runPredict">✦ 运行预测</button><span class="hint" data-i18n="predictHint">超范围数据不会令平台崩溃；会给出边界保护后的分数与明确提示。</span></div>
+            </div>
+          </section>
+          <aside class="side-stack">
+            <section class="card"><div class="card-head"><h3 data-i18n="resultsTitle">预测结果</h3><span class="tag" data-i18n="resultsTag">实时</span></div><div class="results"><div id="emptyResults" class="empty"><div><div class="empty-icon">◌</div><strong data-i18n="emptyTitle">等待预测</strong><p data-i18n="emptyText">提交数据后，将在此展示感官评分。</p></div></div><div class="result-grid hidden" id="resultGrid"></div></div></section>
+            <section class="card"><div class="card-head"><h3 data-i18n="modelTitle">冻结模型与适用域</h3></div><dl class="model-list"><div class="model-row"><dt data-i18n="modelType">模型</dt><dd>SVR-RBF</dd></div><div class="model-row"><dt data-i18n="selection">特征选择</dt><dd>SelectKBest · f_regression · k=30</dd></div><div class="model-row"><dt data-i18n="domain">适用域</dt><dd data-i18n="domainValue">训练范围 + LedoitWolf Mahalanobis</dd></div><div class="model-row"><dt data-i18n="integrity">模型校验</dt><dd id="modelHash">Loading…</dd></div></dl></section>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="visualization">
+      <div class="container">
+        <div class="visual">
+          <div class="visual-grid">
+            <div><h2 class="section-title" data-i18n="visualTitle">结果可视化</h2><p class="section-kicker" data-i18n="visualText">预测完成后，雷达图会将六项感官属性与喜好度的相对表现集中展示。</p><div class="scale-legend"><span class="legend" data-i18n="legendSensory">感官属性 · 0–5</span><span class="legend" data-i18n="legendPreference">喜好度 · 0–10</span><span class="legend" data-i18n="legendProtected">量程保护已启用</span></div></div>
+            <div class="chart-wrap"><canvas id="predictionChart" aria-label="Prediction radar chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="method">
+      <div class="container">
+        <h2 class="section-title" data-i18n="methodTitle">模型与优化策略</h2>
+        <p class="section-kicker" data-i18n="methodSubtitle">部署参数已经固定；不同感官目标使用训练期间验证得到的对应优化策略。</p>
+        <div class="method-grid"><article class="method"><b>PSO</b><p data-i18n="psoText">奶香味、氧化味与青草味</p></article><article class="method"><b>SA</b><p data-i18n="saText">蒸煮味</p></article><article class="method"><b>AFSA</b><p data-i18n="afsaText">脂香味与甜味</p></article><article class="method"><b>SVR-RBF</b><p data-i18n="svrText">固定 RBF 参数、SelectKBest_30 与量程约束</p></article></div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="container foot"><span>MilkSense · <span data-i18n="footerText">牛奶质量智能预测</span></span><a href="https://github.com" id="repoLink" target="_blank" rel="noreferrer" data-i18n="sourceLink">查看源代码</a></div></footer>
+  <dialog id="oodDialog"><div class="dialog-top" data-i18n="dialogTitle">Out of Domain · 适用域提醒</div><div class="dialog-body"><strong id="dialogMessage">该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考</strong><p id="dialogDetail" data-i18n="dialogDetail">系统继续运行：超出训练范围的浓度仅在推理时截断到边界，输出分数也会限制在合法量表内。</p></div><div class="dialog-actions"><button class="btn btn-run" id="closeDialog" type="button" data-i18n="understood">我已了解</button></div></dialog>
+
+  <script>
+  (() => {
+    'use strict';
+    const I18N = {
+      zh: { navPredict:'在线预测',navVisual:'结果可视化',navModel:'模型说明',frozenBadge:'FROZEN PRODUCTION MODEL',heroTitle:'牛奶感官预测，<br>有据可循。',heroText:'基于已冻结的 SVR-RBF + SelectKBest_30 模型，对 86 种挥发性化合物浓度进行推理，输出六项感官属性与整体喜好度。',heroAction:'开始预测 →',heroMore:'查看模型说明',statVersion:'部署版本',statOutput:'输出量程',statScale:'六项感官属性 0–5 · 喜好度 0–10',statDomain:'输入防护',statDomainValue:'训练范围 + Mahalanobis 适用域',predictTitle:'在线预测工作台',predictSubtitle:'所有预测均由浏览器直接加载固定模型完成；模型参数不会在此页面中被重新训练或更改。',inputTitle:'化合物浓度输入',sampleLabel:'样品类型',milkOption:'牛奶 / Milk',nonMilkOption:'非牛奶 / Non-milk',unknownOption:'未知 / Unknown',searchLabel:'查找化合物',searchPlaceholder:'例如 Hexanal（己醛）',stressTest:'⚡ 抗压测试：己醛 ×1000',reset:'恢复训练中位数',featureNote:'单位：μg/kg。请输入全部 86 项浓度；页面会自动用训练中位数初始化。',runPredict:'✦ 运行预测',predictHint:'超范围数据不会令平台崩溃；会给出边界保护后的分数与明确提示。',resultsTitle:'预测结果',resultsTag:'实时',emptyTitle:'等待预测',emptyText:'提交数据后，将在此展示感官评分。',modelTitle:'冻结模型与适用域',modelType:'模型',selection:'特征选择',domain:'适用域',domainValue:'训练范围 + LedoitWolf Mahalanobis',integrity:'模型校验',oodTitle:'适用域警告',oodWarning:'该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考',visualTitle:'结果可视化',visualText:'预测完成后，雷达图会将六项感官属性与喜好度的相对表现集中展示。',legendSensory:'感官属性 · 0–5',legendPreference:'喜好度 · 0–10',legendProtected:'量程保护已启用',methodTitle:'模型与优化策略',methodSubtitle:'部署参数已经固定；不同感官目标使用训练期间验证得到的对应优化策略。',psoText:'奶香味、氧化味与青草味',saText:'蒸煮味',afsaText:'脂香味与甜味',svrText:'固定 RBF 参数、SelectKBest_30 与量程约束',footerText:'牛奶质量智能预测',sourceLink:'查看源代码',dialogTitle:'Out of Domain · 适用域提醒',dialogDetail:'系统继续运行：超出训练范围的浓度仅在推理时截断到边界，输出分数也会限制在合法量表内。',understood:'我已了解',invalid:'请填写有效且不小于 0 的化合物浓度。',sampleNonMilk:'样品类型为非牛奶或未知',rangeReason:'{feature}：{value}（训练范围 {min}–{max}）',distanceReason:'多变量距离超出训练数据的适用域阈值',chartTitle:'预测画像（百分比化量表）' },
+      en: { navPredict:'Predict',navVisual:'Visualize',navModel:'Model',frozenBadge:'FROZEN PRODUCTION MODEL',heroTitle:'Milk sensory prediction,<br>grounded in evidence.',heroText:'Use an immutable SVR-RBF + SelectKBest_30 model to infer six sensory attributes and overall preference from 86 volatile-compound concentrations.',heroAction:'Start prediction →',heroMore:'Explore the model',statVersion:'Deployment version',statOutput:'Output scales',statScale:'Six sensory attributes 0–5 · Preference 0–10',statDomain:'Input protection',statDomainValue:'Training range + Mahalanobis domain',predictTitle:'Online prediction workspace',predictSubtitle:'The fixed model is loaded and evaluated directly in the browser. No model parameter is retrained or changed on this page.',inputTitle:'Compound concentration inputs',sampleLabel:'Sample type',milkOption:'Milk',nonMilkOption:'Non-milk',unknownOption:'Unknown',searchLabel:'Find a compound',searchPlaceholder:'e.g. Hexanal',stressTest:'⚡ Stress test: Hexanal ×1000',reset:'Restore training medians',featureNote:'Unit: μg/kg. Enter all 86 concentrations; training medians initialize the inputs.',runPredict:'✦ Run prediction',predictHint:'Out-of-range data does not crash the platform; guarded scores and a clear warning are returned.',resultsTitle:'Prediction results',resultsTag:'Live',emptyTitle:'Ready when you are',emptyText:'Submit the inputs to see sensory scores here.',modelTitle:'Frozen model & domain',modelType:'Model',selection:'Feature selection',domain:'Applicability domain',domainValue:'Training range + LedoitWolf Mahalanobis',integrity:'Model integrity',oodTitle:'Applicability-domain alert',oodWarning:'This data is outside the model applicability domain (Out of Domain); results are for reference only.',visualTitle:'Result visualization',visualText:'After prediction, the radar chart summarizes six sensory dimensions and preference on their respective scales.',legendSensory:'Sensory attributes · 0–5',legendPreference:'Preference · 0–10',legendProtected:'Scale protection on',methodTitle:'Model & optimization strategy',methodSubtitle:'Deployment parameters are frozen; each sensory target retains its validated optimization strategy.',psoText:'Milky, oxidized and fresh notes',saText:'Cooked note',afsaText:'Fatty and sweet notes',svrText:'Fixed RBF parameters, SelectKBest_30 and scale constraints',footerText:'Milk quality intelligence',sourceLink:'View source',dialogTitle:'Out of Domain · Applicability alert',dialogDetail:'The system remains available: values outside the training range are clipped only for inference, and outputs stay within valid declared scales.',understood:'Understood',invalid:'Enter valid compound concentrations greater than or equal to 0.',sampleNonMilk:'Sample type is non-milk or unknown',rangeReason:'{feature}: {value} (training range {min}–{max})',distanceReason:'Multivariate distance exceeds the training-domain threshold',chartTitle:'Prediction profile (normalized scale)' }
+    };
+    let lang = localStorage.getItem('milksense-lang') || 'zh';
+    let model, chart;
+    const $ = (id) => document.getElementById(id);
+    const t = (key) => I18N[lang][key] || key;
+    const zhNames = { Hexanal:'己醛' };
+    const targetName = (target) => lang === 'zh' ? model.models[target].target.zh : model.models[target].target.en;
+    const fmt = (value, digits=4) => Number(value).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US',{maximumFractionDigits:digits});
+    function applyLanguage() {
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      document.title = lang === 'zh' ? 'MilkSense · 牛奶感官预测' : 'MilkSense · Milk sensory prediction';
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+      $('languageToggle').textContent = lang === 'zh' ? 'EN' : '中文';
+      $('languageToggle').setAttribute('aria-label', lang === 'zh' ? 'Switch to English' : '切换到中文');
+      if (model) { buildInputs(true); $('modelVersion').textContent = model.model_version; $('modelHash').textContent = `${model.artifact_sha256.slice(0,16)}…`; }
+    }
+    function buildInputs(preserve=false) {
+      const prior = preserve ? Object.fromEntries([...document.querySelectorAll('.feature-input')].map(x => [x.dataset.feature,x.value])) : {};
+      const grid = $('featureGrid'); grid.replaceChildren();
+      model.feature_names.forEach((feature,index) => {
+        const box = document.createElement('div'); box.className='feature'; box.dataset.search=feature.toLowerCase();
+        const label = document.createElement('label'); label.htmlFor=`f-${index}`; label.title=feature;
+        label.innerHTML = `${feature}${lang==='zh' && zhNames[feature] ? ` <small>(${zhNames[feature]})</small>` : ''}`;
+        const input = document.createElement('input'); input.type='number'; input.step='any'; input.min='0'; input.required=true; input.id=`f-${index}`; input.className='feature-input'; input.dataset.feature=feature; input.dataset.index=index; input.value=prior[feature] ?? model.domain_guard.median[index];
+        const range = document.createElement('div'); range.className='range'; range.textContent = `${lang==='zh'?'训练范围':'Train range'}: ${fmt(model.domain_guard.minimum[index])} – ${fmt(model.domain_guard.maximum[index])}`;
+        box.append(label,input,range); grid.append(box);
+      });
+      filterInputs();
+    }
+    function filterInputs(){ const q=$('search').value.trim().toLowerCase(); document.querySelectorAll('.feature').forEach(x=>x.classList.toggle('hidden',Boolean(q)&&!x.dataset.search.includes(q))); }
+    function featureVector() { const values=[]; for (const el of document.querySelectorAll('.feature-input')) { const value=Number(el.value); if (!Number.isFinite(value) || value < 0) throw new Error(t('invalid')); values[Number(el.dataset.index)]=value; } return values; }
+    function domainCheck(raw) {
+      const guard=model.domain_guard, violations=[]; const clipped=raw.map((value,index)=>{ const min=guard.minimum[index], max=guard.maximum[index]; if(value<min||value>max) violations.push({index,value,min,max}); return Math.min(max,Math.max(min,value)); });
+      const scaled=clipped.map((value,index)=>(value-guard.scaler_mean[index])/guard.scaler_scale[index]);
+      const difference=scaled.map((value,index)=>value-guard.location[index]); let mahalSquared=0;
+      for(let i=0;i<difference.length;i++){ let row=0; for(let j=0;j<difference.length;j++) row+=guard.precision[i][j]*difference[j]; mahalSquared+=difference[i]*row; }
+      const mahal=Math.sqrt(Math.max(mahalSquared,0));
+      const sample=$('sampleType').value; const nonMilk=sample !== 'milk'; const reasons=[];
+      if(nonMilk) reasons.push(t('sampleNonMilk'));
+      violations.slice(0,6).forEach(v=>reasons.push(t('rangeReason').replace('{feature}',model.feature_names[v.index]).replace('{value}',fmt(v.value)).replace('{min}',fmt(v.min)).replace('{max}',fmt(v.max))));
+      if(mahal>guard.mahalanobis_threshold) reasons.push(t('distanceReason'));
+      return {clipped, ood:nonMilk||violations.length>0||mahal>guard.mahalanobis_threshold, reasons};
+    }
+    function predictModel(values, config) {
+      const selected=config.selected_indices.map(index=>(values[index]-model.scaler.mean[index])/model.scaler.scale[index]); let result=config.intercept;
+      for(let row=0;row<config.support_vectors.length;row++){ let distance=0; const support=config.support_vectors[row]; for(let col=0;col<support.length;col++){ const delta=selected[col]-support[col]; distance+=delta*delta; } result+=config.dual_coef[row]*Math.exp(-config.gamma*distance); }
+      const [lower,upper]=config.target.range; return Math.max(lower,Math.min(upper,result));
+    }
+    function renderResults(predictions) {
+      const grid=$('resultGrid'); grid.replaceChildren();
+      Object.entries(predictions).forEach(([target,score])=>{ const config=model.models[target]; const card=document.createElement('article'); card.className=`result ${target==='Preference'?'preference':''}`; const percent=score/config.target.range[1]*100;
+        card.innerHTML=`<div class="result-top"><span>${targetName(target)}</span><span class="algo">${config.target.optimizer}</span></div><div class="score">${score.toFixed(3)}</div><div class="scale">${lang==='zh'?'量表':'Scale'} 0–${config.target.range[1]}</div><div class="meter"><i style="width:${percent}%"></i></div>`; grid.append(card); });
+      $('emptyResults').classList.add('hidden'); grid.classList.remove('hidden');
+    }
+    function renderChart(predictions) {
+      if(!window.Chart) return;
+      const targets=Object.keys(predictions); const values=targets.map(target=>predictions[target]/model.models[target].target.range[1]*100);
+      if(chart) chart.destroy(); chart=new Chart($('predictionChart'),{type:'radar',data:{labels:targets.map(targetName),datasets:[{label:t('chartTitle'),data:values,fill:true,backgroundColor:'rgba(41,150,106,.22)',borderColor:'#18734d',pointBackgroundColor:'#2c9d78',pointRadius:4,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,display:false},grid:{color:'rgba(30,88,67,.16)'},angleLines:{color:'rgba(30,88,67,.16)'},pointLabels:{color:'#174837',font:{size:11,weight:'700'}}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>`${ctx.raw.toFixed(1)}%`}}}}});
+    }
+    function renderNotice(domain) { const notice=$('oodNotice'); const message=lang==='zh'?'该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考':t('oodWarning'); if(!domain.ood){ notice.classList.remove('show'); return; } $('oodTitle').textContent=t('oodTitle'); $('oodMessage').textContent=message; const reasons=$('oodReasons'); reasons.replaceChildren(); domain.reasons.forEach(reason=>{const item=document.createElement('li'); item.textContent=reason; reasons.append(item);}); notice.classList.add('show'); $('dialogMessage').textContent=message; const dialog=$('oodDialog'); if(typeof dialog.showModal==='function'&&!dialog.open) dialog.showModal(); }
+    function runPrediction() { try { const raw=featureVector(), domain=domainCheck(raw), predictions={}; Object.entries(model.models).forEach(([target,config])=>predictions[target]=predictModel(domain.clipped,config)); renderResults(predictions); renderChart(predictions); renderNotice(domain); $('visualization').scrollIntoView({behavior:'smooth',block:'center'}); } catch(error) { window.alert(error.message); } }
+    async function init() { try { const response=await fetch('./assets/frozen-model-v1.json',{cache:'no-cache'}); if(!response.ok) throw new Error('Could not load frozen model.'); model=await response.json(); applyLanguage(); $('inputCount').textContent=`${model.feature_names.length} ${lang==='zh'?'项':'inputs'}`; } catch(error) { $('modelVersion').textContent=error.message; $('predictButton').disabled=true; } }
+    $('languageToggle').addEventListener('click',()=>{lang=lang==='zh'?'en':'zh';localStorage.setItem('milksense-lang',lang);applyLanguage();});
+    $('search').addEventListener('input',filterInputs);
+    $('reset').addEventListener('click',()=>{buildInputs(); $('sampleType').value='milk'; $('oodNotice').classList.remove('show');});
+    $('stressTest').addEventListener('click',()=>{const input=[...document.querySelectorAll('.feature-input')].find(x=>x.dataset.feature==='Hexanal'); const index=Number(input.dataset.index); input.value=model.domain_guard.maximum[index]*1000; $('search').value='Hexanal'; filterInputs(); runPrediction();});
+    $('predictButton').addEventListener('click',runPrediction);
+    $('closeDialog').addEventListener('click',()=>$('oodDialog').close());
+    init();
+  })();
+  </script>
+</body>
+</html>

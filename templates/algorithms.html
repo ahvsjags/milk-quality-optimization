@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}Algorithm Comparison - Milk Quality Optimization{% endblock %}
+
+{% block content %}
+<style>
+    /* Preserve the original overview cards while preventing large metrics
+       from wrapping on medium-width screens. */
+    .algorithm-overview .metric-value { white-space: nowrap; font-size: clamp(1.8rem, 2.2vw, 2.5rem); }
+</style>
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <h1 class="display-5 mb-3">
+                    <i class="fas fa-cogs text-primary me-3"></i>
+                    Algorithm Performance Comparison
+                </h1>
+                <p class="lead">
+                    Detailed analysis of PSO, SA, and AFSA optimization algorithms
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Algorithm Overview Cards -->
+<div class="row mb-5 algorithm-overview">
+    {% for alg, stats in algorithm_stats.items() %}
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header text-center">
+                <h5 class="mb-0">
+                    <span class="algorithm-badge badge-{{ alg.lower() }} fs-6">
+                        {% if alg == 'PSO' %}
+                        <i class="fas fa-swatchbook me-2"></i>Particle Swarm Optimization
+                        {% elif alg == 'SA' %}
+                        <i class="fas fa-fire me-2"></i>Simulated Annealing
+                        {% else %}
+                        <i class="fas fa-fish me-2"></i>Artificial Fish Swarm Algorithm
+                        {% endif %}
+                    </span>
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-primary">{{ "%.4f"|format(stats.avg_score) }}</div>
+                            <div class="metric-label">Avg R² Score</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-info">{{ "%.1f"|format(stats.avg_time) }}s</div>
+                            <div class="metric-label">Avg Time</div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-success">{{ stats.count }}</div>
+                            <div class="metric-label">Targets Won</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card border-0 shadow-none">
+                            <div class="metric-value text-warning">{{ stats.win_rate }}%</div>
+                            <div class="metric-label">Win Rate</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Target Variables:</h6>
+                    {% for target in stats.targets %}
+                    <span class="badge bg-light text-dark me-1 mb-1">{{ target }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Model Optimization Extension -->
+<div class="row mb-5" id="metaheuristicOptimizer">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h5 class="mb-0">
+                    <i class="fas fa-sliders-h me-2"></i>
+                    Advanced Model Optimization
+                </h5>
+                <span class="badge bg-light text-dark">Experimental · Production model remains frozen</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Select a prediction target and base model, then apply a metaheuristic algorithm for bounded hyperparameter optimization.
+                </p>
+
+                <form id="optimizationForm">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label fw-semibold" for="optimizationTarget">Target</label>
+                            <select class="form-select" id="optimizationTarget" required>
+                                {% for key, target in metaheuristic_options.targets.items() %}
+                                <option value="{{ key }}">{{ target.label }} ({{ target.scale[0] }}–{{ target.scale[1] }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-semibold" for="optimizationModel">Model</label>
+                            <select class="form-select" id="optimizationModel" required>
+                                {% for key, model in metaheuristic_options.models.items() %}
+                                <option value="{{ key }}">{{ model.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-semibold" for="optimizationAlgorithm">Metaheuristic</label>
+                            <select class="form-select" id="optimizationAlgorithm" required>
+                                {% for key, algorithm in metaheuristic_options.algorithms.items() %}
+                                <option value="{{ key }}">{{ key }} · {{ algorithm.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label fw-semibold" for="optimizationBudget">Budget</label>
+                            <select class="form-select" id="optimizationBudget" required>
+                                {% for key, budget in metaheuristic_options.budgets.items() %}
+                                <option value="{{ key }}" {% if key == 'quick' %}selected{% endif %}>
+                                    {% if key == 'quick' %}Quick{% elif key == 'standard' %}Standard{% else %}Thorough{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-2 d-grid">
+                            <button class="btn btn-primary" id="runOptimization" type="submit">
+                                <i class="fas fa-play me-1"></i>Optimize
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded p-3 mt-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-lg-8">
+                                <span class="small fw-semibold me-2">Search space:</span>
+                                <span class="d-inline-flex flex-wrap gap-2" id="parameterChips"></span>
+                            </div>
+                            <div class="col-lg-4 text-lg-end">
+                                <span class="small fw-semibold me-2">Method:</span>
+                                <span id="algorithmDescription" class="small text-muted"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 small text-muted">
+                        Available:
+                        {% for key, algorithm in metaheuristic_options.algorithms.items() %}
+                        <span class="badge bg-light text-dark border me-1">{{ key }}</span>
+                        {% endfor %}
+                        <span class="ms-2"><i class="fas fa-lock me-1"></i>Results are not written to the frozen production model.</span>
+                    </div>
+                </form>
+
+                <div id="optimizationError" class="alert alert-danger d-none mt-4" role="alert"></div>
+                <div id="optimizationResults" class="d-none mt-4">
+                    <hr>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h6 class="mb-0"><i class="fas fa-check-circle text-success me-2"></i>Optimization Result</h6>
+                        <span class="badge bg-success" id="optimizationCombination"></span>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted">Validation R²</small>
+                                <h4 class="text-success mb-0 mt-1" id="optimizedR2"></h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted">RMSE</small>
+                                <h4 class="text-success mb-0 mt-1" id="optimizedRmse"></h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted">R² vs. baseline</small>
+                                <h4 class="text-success mb-0 mt-1" id="optimizedImprovement"></h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted">Evaluations / Time</small>
+                                <h4 class="text-success mb-0 mt-1" id="optimizedCost"></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <h6>Best Parameters</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0"><tbody id="bestParamsBody"></tbody></table>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <h6>Convergence</h6>
+                            <div style="height:200px"><canvas id="optimizationHistoryChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="small text-muted border-top pt-3 mt-3">
+                        <i class="fas fa-lock me-1"></i><span id="productionPolicyResult">Frozen production model was not modified.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Comparison Charts -->
+<div class="row mb-5">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Average Performance Comparison
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="performanceComparisonChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-stopwatch me-2"></i>
+                    Execution Time Comparison
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="timeComparisonChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Algorithm Details -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Algorithm Technical Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-swatchbook me-2"></i>
+                                    Particle Swarm Optimization (PSO)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Principle:</strong> Simulates social behavior of bird flocking</p>
+                                <p><strong>Strengths:</strong></p>
+                                <ul>
+                                    <li>Fast convergence</li>
+                                    <li>Good global search ability</li>
+                                    <li>Simple implementation</li>
+                                </ul>
+                                <p><strong>Parameters:</strong></p>
+                                <ul>
+                                    <li>Particles: 50</li>
+                                    <li>Inertia weight: 0.6</li>
+                                    <li>Cognitive factor: 2.0</li>
+                                    <li>Social factor: 2.0</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-4">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-fire me-2"></i>
+                                    Simulated Annealing (SA)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Principle:</strong> Mimics the annealing process in metallurgy</p>
+                                <p><strong>Strengths:</strong></p>
+                                <ul>
+                                    <li>Avoids local optima</li>
+                                    <li>Robust convergence</li>
+                                    <li>Theoretical guarantees</li>
+                                </ul>
+                                <p><strong>Parameters:</strong></p>
+                                <ul>
+                                    <li>Initial temp: 200</li>
+                                    <li>Cooling rate: 0.98</li>
+                                    <li>Min temp: 0.001</li>
+                                    <li>Max iterations: 150</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-4">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-fish me-2"></i>
+                                    Artificial Fish Swarm Algorithm (AFSA)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Principle:</strong> Simulates fish schooling behavior</p>
+                                <p><strong>Strengths:</strong></p>
+                                <ul>
+                                    <li>Strong exploration ability</li>
+                                    <li>Adaptive behavior</li>
+                                    <li>Parallel processing</li>
+                                </ul>
+                                <p><strong>Parameters:</strong></p>
+                                <ul>
+                                    <li>Fish count: 40</li>
+                                    <li>Visual range: 0.4</li>
+                                    <li>Step size: 0.15</li>
+                                    <li>Crowding factor: 0.7</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Matrix -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Detailed Performance Matrix
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Algorithm</th>
+                                <th>Targets Won</th>
+                                <th>Win Rate</th>
+                                <th>Avg R² Score</th>
+                                <th>Best R² Score</th>
+                                <th>Avg Execution Time</th>
+                                <th>Efficiency Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alg, stats in algorithm_stats.items() %}
+                            <tr>
+                                <td>
+                                    <span class="algorithm-badge badge-{{ alg.lower() }}">
+                                        {{ alg }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ stats.count }}</span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ stats.win_rate }}%">
+                                            {{ stats.win_rate }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="r2-score r2-excellent">
+                                        {{ "%.4f"|format(stats.avg_score) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="r2-score r2-excellent">
+                                        {{ "%.4f"|format(stats.scores|max) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ "%.1f"|format(stats.avg_time) }}s
+                                    </span>
+                                </td>
+                                <td>
+                                    {% set efficiency = (stats.avg_score / stats.avg_time * 100) %}
+                                    <span class="badge {% if efficiency > 1.5 %}bg-success{% elif efficiency > 1.0 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ "%.2f"|format(efficiency) }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const optimizationOptions = {{ metaheuristic_options|tojson }};
+    const optimizationForm = document.getElementById('optimizationForm');
+    const modelSelect = document.getElementById('optimizationModel');
+    const algorithmSelect = document.getElementById('optimizationAlgorithm');
+    const runButton = document.getElementById('runOptimization');
+    let optimizationHistoryChart = null;
+
+    function formatBound(value) {
+        return Number(value).toLocaleString(undefined, {maximumSignificantDigits: 5});
+    }
+
+    function renderOptimizationContext() {
+        const model = optimizationOptions.models[modelSelect.value];
+        const algorithm = optimizationOptions.algorithms[algorithmSelect.value];
+        const chips = document.getElementById('parameterChips');
+        chips.replaceChildren();
+        model.parameters.forEach(parameter => {
+            const chip = document.createElement('span');
+            chip.className = 'badge bg-white text-dark border fw-normal';
+            chip.textContent = `${parameter.name}: ${formatBound(parameter.minimum)}–${formatBound(parameter.maximum)} (${parameter.scale})`;
+            chips.append(chip);
+        });
+        document.getElementById('algorithmDescription').textContent = `${algorithm.english}（${algorithm.name}）`;
+    }
+    modelSelect.addEventListener('change', renderOptimizationContext);
+    algorithmSelect.addEventListener('change', renderOptimizationContext);
+    renderOptimizationContext();
+
+    function showOptimizationResult(result) {
+        document.getElementById('optimizationCombination').textContent = `${result.target.label} · ${result.model.name} · ${result.algorithm.key}`;
+        document.getElementById('optimizedR2').textContent = result.best_metrics.r2.toFixed(4);
+        document.getElementById('optimizedRmse').textContent = result.best_metrics.rmse.toFixed(4);
+        const improvement = result.r2_improvement;
+        const improvementElement = document.getElementById('optimizedImprovement');
+        improvementElement.textContent = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(4)}`;
+        improvementElement.classList.toggle('text-danger', improvement < 0);
+        document.getElementById('optimizedCost').textContent = `${result.evaluations} / ${result.elapsed_seconds}s`;
+        document.getElementById('productionPolicyResult').textContent = result.production_model_changed ? 'Production model state is invalid; do not publish.' : 'Frozen production model was not modified; approve experimental results separately before release.';
+
+        const paramsBody = document.getElementById('bestParamsBody');
+        paramsBody.replaceChildren();
+        Object.entries(result.best_params).forEach(([name, value]) => {
+            const row = document.createElement('tr');
+            const nameCell = document.createElement('th');
+            const valueCell = document.createElement('td');
+            nameCell.textContent = name;
+            valueCell.textContent = typeof value === 'number' ? Number(value).toPrecision(6) : value;
+            row.append(nameCell, valueCell);
+            paramsBody.append(row);
+        });
+
+        if (optimizationHistoryChart) optimizationHistoryChart.destroy();
+        optimizationHistoryChart = new Chart(document.getElementById('optimizationHistoryChart'), {
+            type: 'line',
+            data: {
+                labels: result.history.map((_, index) => index),
+                datasets: [{label: 'Best validation R²', data: result.history, borderColor: '#2e8b57', backgroundColor: 'rgba(46,139,87,.12)', fill: true, tension: .25}]
+            },
+            options: {responsive: true, maintainAspectRatio: false, scales: {x: {title: {display: true, text: 'Iteration'}}, y: {title: {display: true, text: 'R²'}}}}
+        });
+        document.getElementById('optimizationResults').classList.remove('d-none');
+    }
+
+    optimizationForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        const errorBox = document.getElementById('optimizationError');
+        errorBox.classList.add('d-none');
+        runButton.disabled = true;
+        runButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Optimizing…';
+        try {
+            const response = await fetch('{{ url_for("api_metaheuristic_optimize") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    target: document.getElementById('optimizationTarget').value,
+                    model: modelSelect.value,
+                    algorithm: algorithmSelect.value,
+                    budget: document.getElementById('optimizationBudget').value,
+                    seed: 42
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || '优化执行失败');
+            showOptimizationResult(result);
+        } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.classList.remove('d-none');
+        } finally {
+            runButton.disabled = false;
+            runButton.innerHTML = '<i class="fas fa-play me-1"></i>Optimize';
+        }
+    });
+
+    // Performance Comparison Chart
+    const ctx1 = document.getElementById('performanceComparisonChart').getContext('2d');
+    const algorithms = [{% for alg in algorithm_stats.keys() %}'{{ alg }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const avgScores = [{% for stats in algorithm_stats.values() %}{{ stats.avg_score }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const winRates = [{% for stats in algorithm_stats.values() %}{{ stats.win_rate }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: algorithms,
+            datasets: [{
+                label: 'Average R² Score',
+                data: avgScores,
+                backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1'],
+                borderColor: ['#FF5252', '#26C6DA', '#2196F3'],
+                borderWidth: 2,
+                yAxisID: 'y'
+            }, {
+                label: 'Win Rate (%)',
+                data: winRates,
+                type: 'line',
+                borderColor: '#2E8B57',
+                backgroundColor: 'rgba(46, 139, 87, 0.1)',
+                borderWidth: 3,
+                fill: false,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'R² Score'
+                    },
+                    min: 0.7,
+                    max: 0.85
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Win Rate (%)'
+                    },
+                    min: 0,
+                    max: 100,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+    
+    // Execution Time Comparison Chart
+    const ctx2 = document.getElementById('timeComparisonChart').getContext('2d');
+    const avgTimes = [{% for stats in algorithm_stats.values() %}{{ stats.avg_time }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: algorithms,
+            datasets: [{
+                data: avgTimes,
+                backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1'],
+                borderWidth: 3,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + 's';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

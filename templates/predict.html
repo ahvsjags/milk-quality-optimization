@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}在线预测 - Milk Quality Optimization{% endblock %}
+
+{% block content %}
+<style>
+    .prediction-hero { background: linear-gradient(135deg, #173f35, #2e8b57 65%, #4ecdc4); color: white; }
+    .prediction-hero .badge { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28); }
+    .feature-panel { max-height: 620px; overflow-y: auto; padding-right: .35rem; }
+    .feature-item { border: 1px solid #e7ecea; border-radius: 12px; padding: .8rem; background: #fbfdfc; }
+    .feature-item:focus-within { border-color: #2e8b57; box-shadow: 0 0 0 .2rem rgba(46,139,87,.10); }
+    .range-note { color: #61716c; font-size: .76rem; }
+    .score-card { border: 1px solid #e6ece9; border-radius: 14px; padding: 1rem; height: 100%; background: #fff; }
+    .score-value { color: #1f7550; font-size: 2rem; font-weight: 750; line-height: 1; }
+    .score-scale { color: #6a7773; font-size: .82rem; }
+    .domain-alert { border-left: 5px solid #dc8b00; }
+    .model-lock { font-family: Consolas, Monaco, monospace; overflow-wrap: anywhere; }
+    .sticky-actions { background: #fff; border-top: 1px solid #e4e9e7; padding: 1rem 0 .25rem; }
+    .ood-dialog { width: min(92vw, 520px); padding: 0; border: 0; border-radius: 14px; box-shadow: 0 24px 70px rgba(0,0,0,.35); }
+    .ood-dialog::backdrop { background: rgba(15, 30, 25, .58); }
+    .ood-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.2rem; background: #ffc107; }
+    .ood-dialog-body { padding: 1.2rem; }
+    .ood-dialog-footer { display: flex; justify-content: flex-end; padding: .9rem 1.2rem; border-top: 1px solid #e5e7e6; }
+</style>
+
+<section class="card prediction-hero mb-4">
+    <div class="card-body p-4 p-lg-5">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="text-uppercase small fw-bold opacity-75 mb-2">Frozen production inference</div>
+                <h1 class="display-6 fw-bold mb-3"><i class="fas fa-vial me-2"></i>牛奶感官属性在线预测</h1>
+                <p class="mb-3 opacity-90">输入 86 种挥发性化合物浓度，使用已冻结的 SVR-RBF + SelectKBest_30 模型预测六大感官属性及喜好度。</p>
+                <span class="badge rounded-pill me-2 p-2">六大感官属性：0–5</span>
+                <span class="badge rounded-pill p-2">喜好度：0–10</span>
+            </div>
+            <div class="col-lg-4">
+                <div class="p-3 rounded-3" style="background:rgba(0,0,0,.13)">
+                    <div class="small opacity-75">固定模型版本</div>
+                    <div class="fw-bold model-lock">{{ model_version }}</div>
+                    <div class="small mt-2"><i class="fas fa-lock me-1"></i>FROZEN · 服务器不自动重训</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
+<div id="domainAlert" class="alert alert-warning domain-alert d-none" role="alert" aria-live="assertive">
+    <h5 class="alert-heading"><i class="fas fa-triangle-exclamation me-2"></i>适用域警告</h5>
+    <div class="fw-bold" id="domainWarning"></div>
+    <ul class="mb-0 mt-2" id="domainReasons"></ul>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span><i class="fas fa-flask-vial me-2"></i>化合物浓度输入（μg/kg）</span>
+                <span class="badge bg-light text-dark">{{ features|length }} 项，均为必填</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-7">
+                        <label for="featureSearch" class="visually-hidden">搜索化合物</label>
+                        <input id="featureSearch" class="form-control" type="search" placeholder="搜索化合物，例如 Hexanal（己醛）">
+                    </div>
+                    <div class="col-md-5 d-grid">
+                        <button id="extremeHexanal" class="btn btn-outline-warning" type="button">
+                            <i class="fas fa-bolt me-1"></i>抗压测试：己醛 ×1000
+                        </button>
+                    </div>
+                </div>
+
+                <form id="predictionForm" novalidate>
+                    <div class="feature-panel">
+                        <div class="row g-3" id="featureGrid">
+                            {% for feature in features %}
+                            <div class="col-md-6 feature-wrapper" data-search="{{ feature.name|lower }}">
+                                <div class="feature-item">
+                                    <label class="form-label fw-semibold mb-1" for="feature-{{ loop.index }}">
+                                        {{ feature.name }}{% if feature.name == 'Hexanal' %} <span class="badge bg-warning text-dark">己醛</span>{% endif %}
+                                    </label>
+                                    <input
+                                        class="form-control feature-input"
+                                        id="feature-{{ loop.index }}"
+                                        data-feature="{{ feature.name }}"
+                                        data-training-max="{{ feature.maximum }}"
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        value="{{ '%.8g'|format(feature.median) }}"
+                                        required
+                                        inputmode="decimal">
+                                    <div class="range-note mt-1">训练范围：{{ '%.4g'|format(feature.minimum) }} – {{ '%.4g'|format(feature.maximum) }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="sticky-actions d-flex flex-wrap gap-2 align-items-center">
+                        <button class="btn btn-primary" id="submitPrediction" type="submit">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i>开始预测
+                        </button>
+                        <button class="btn btn-outline-secondary" id="resetFeatures" type="button">恢复训练中位数</button>
+                        <span class="small text-muted ms-auto">超范围输入仍会返回结果，但明确标记 Out of Domain</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-gauge-high me-2"></i>预测结果</div>
+            <div class="card-body">
+                <div id="emptyResults" class="text-center text-muted py-5">
+                    <i class="fas fa-chart-simple fa-3x mb-3 opacity-50"></i>
+                    <p class="mb-0">提交数据后显示预测分值</p>
+                </div>
+                <div id="resultGrid" class="row g-3 d-none"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-shield-halved me-2"></i>模型与适用域</div>
+            <div class="card-body small">
+                <dl class="row mb-0">
+                    <dt class="col-4">模型</dt><dd class="col-8">SVR-RBF</dd>
+                    <dt class="col-4">特征选择</dt><dd class="col-8">SelectKBest (f_regression, k=30)</dd>
+                    <dt class="col-4">适用域</dt><dd class="col-8">训练范围 + LedoitWolf Mahalanobis 距离</dd>
+                    <dt class="col-4">输出约束</dt><dd class="col-8">感官属性 [0,5]；喜好度 [0,10]</dd>
+                    <dt class="col-4">校验摘要</dt><dd class="col-8 model-lock">{{ model_manifest.artifact_sha256[:16] }}…</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<dialog class="ood-dialog" id="oodDialog" aria-labelledby="oodDialogLabel">
+    <div class="ood-dialog-header">
+        <h5 class="mb-0" id="oodDialogLabel"><i class="fas fa-triangle-exclamation me-2"></i>Out of Domain</h5>
+        <button type="button" class="btn-close" id="closeOodDialogX" aria-label="关闭"></button>
+    </div>
+    <div class="ood-dialog-body">
+        <p class="fw-bold mb-2">该数据已超出本模型的适用范围（Out of Domain），预测结果仅供参考</p>
+        <p class="mb-0 text-muted">系统未中断；超范围浓度按训练边界截断后推理，预测结果再做合法量程约束。请优先核对化合物浓度、单位与样品类型。</p>
+    </div>
+    <div class="ood-dialog-footer">
+        <button type="button" class="btn btn-secondary" id="closeOodDialog">我已了解</button>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('predictionForm');
+    const inputs = Array.from(document.querySelectorAll('.feature-input'));
+    const initialValues = new Map(inputs.map(input => [input.dataset.feature, input.value]));
+    const submitButton = document.getElementById('submitPrediction');
+    const errorAlert = document.getElementById('errorAlert');
+    const domainAlert = document.getElementById('domainAlert');
+    const resultGrid = document.getElementById('resultGrid');
+    const emptyResults = document.getElementById('emptyResults');
+    const oodDialog = document.getElementById('oodDialog');
+
+    function closeOodDialog() {
+        if (typeof oodDialog.close === 'function' && oodDialog.open) oodDialog.close();
+    }
+    document.getElementById('closeOodDialog').addEventListener('click', closeOodDialog);
+    document.getElementById('closeOodDialogX').addEventListener('click', closeOodDialog);
+
+    document.getElementById('featureSearch').addEventListener('input', event => {
+        const query = event.target.value.trim().toLowerCase();
+        document.querySelectorAll('.feature-wrapper').forEach(wrapper => {
+            wrapper.classList.toggle('d-none', query && !wrapper.dataset.search.includes(query));
+        });
+    });
+
+    document.getElementById('extremeHexanal').addEventListener('click', () => {
+        const input = inputs.find(item => item.dataset.feature === 'Hexanal');
+        input.value = Number(input.dataset.trainingMax) * 1000;
+        input.closest('.feature-wrapper').classList.remove('d-none');
+        // The stress-test button is an action, not just a value preset: submit
+        // immediately so users always see the OOD response and warning.
+        form.requestSubmit();
+    });
+
+    document.getElementById('resetFeatures').addEventListener('click', () => {
+        inputs.forEach(input => { input.value = initialValues.get(input.dataset.feature); });
+        errorAlert.classList.add('d-none');
+        domainAlert.classList.add('d-none');
+    });
+
+    function renderResults(data) {
+        resultGrid.replaceChildren();
+        data.predictions.forEach(prediction => {
+            const column = document.createElement('div');
+            column.className = prediction.target === 'Preference' ? 'col-12' : 'col-sm-6';
+            const card = document.createElement('div');
+            card.className = 'score-card';
+            const heading = document.createElement('div');
+            heading.className = 'd-flex justify-content-between align-items-start mb-2';
+            const label = document.createElement('strong');
+            label.textContent = prediction.label;
+            const algorithm = document.createElement('span');
+            algorithm.className = 'badge bg-light text-dark';
+            algorithm.textContent = prediction.optimizer;
+            heading.append(label, algorithm);
+
+            const value = document.createElement('div');
+            value.className = 'score-value';
+            value.textContent = prediction.score.toFixed(3);
+            const scale = document.createElement('div');
+            scale.className = 'score-scale mt-1';
+            scale.textContent = `量表 ${prediction.scale_label}`;
+            const progress = document.createElement('div');
+            progress.className = 'progress mt-3';
+            progress.style.height = '7px';
+            const bar = document.createElement('div');
+            bar.className = 'progress-bar bg-success';
+            bar.style.width = `${Math.max(0, Math.min(100, prediction.score / prediction.scale[1] * 100))}%`;
+            progress.append(bar);
+            card.append(heading, value, scale, progress);
+            column.append(card);
+            resultGrid.append(column);
+        });
+        emptyResults.classList.add('d-none');
+        resultGrid.classList.remove('d-none');
+    }
+
+    function renderDomain(data) {
+        if (!data.out_of_domain) {
+            domainAlert.classList.add('d-none');
+            return;
+        }
+        document.getElementById('domainWarning').textContent = data.warning;
+        const reasons = document.getElementById('domainReasons');
+        reasons.replaceChildren();
+        data.domain.reasons.forEach(reason => {
+            const item = document.createElement('li');
+            item.textContent = reason;
+            reasons.append(item);
+        });
+        data.domain.violations.slice(0, 5).forEach(violation => {
+            const item = document.createElement('li');
+            item.textContent = `${violation.feature}: ${violation.value}（训练范围 ${violation.training_min}–${violation.training_max}）`;
+            reasons.append(item);
+        });
+        domainAlert.classList.remove('d-none');
+        // Native <dialog> avoids relying on the Bootstrap CDN.  If the browser
+        // is too old for showModal(), the visible alert remains and alert() is
+        // used as a last-resort popup.
+        if (typeof oodDialog.showModal === 'function') {
+            if (!oodDialog.open) oodDialog.showModal();
+        } else {
+            window.alert(data.warning);
+        }
+    }
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        errorAlert.classList.add('d-none');
+        if (!form.reportValidity()) return;
+        const features = Object.fromEntries(inputs.map(input => [input.dataset.feature, Number(input.value)]));
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>预测中';
+        try {
+            const response = await fetch('{{ url_for("api_predict") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({features})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || '预测请求失败');
+            renderResults(data);
+            renderDomain(data);
+        } catch (error) {
+            errorAlert.textContent = error.message;
+            errorAlert.classList.remove('d-none');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i>开始预测';
+        }
+    });
+});
+</script>
+{% endblock %}
