@@ -1,9 +1,10 @@
 const { test, expect } = require('playwright/test');
 
 test('public GitHub Pages demo predicts and guards an OOD stress case', async ({ page }) => {
+  const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:8000/';
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('http://127.0.0.1:8000/', { waitUntil: 'networkidle' });
+  await page.goto(baseUrl, { waitUntil: 'networkidle' });
   await expect(page.locator('#modelVersion')).not.toContainText('Loading');
   await page.locator('#predictButton').click();
   await expect(page.locator('#resultGrid')).not.toHaveClass(/hidden/);
